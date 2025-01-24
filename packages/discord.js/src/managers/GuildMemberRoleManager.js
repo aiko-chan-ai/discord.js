@@ -2,9 +2,9 @@
 
 const { Collection } = require('@discordjs/collection');
 const { Routes } = require('discord-api-types/v10');
-const DataManager = require('./DataManager');
-const { DiscordjsTypeError, ErrorCodes } = require('../errors');
-const { Role } = require('../structures/Role');
+const { DataManager } = require('./DataManager.js');
+const { DiscordjsTypeError, ErrorCodes } = require('../errors/index.js');
+const { Role } = require('../structures/Role.js');
 
 /**
  * Manages API methods for roles of a GuildMember and stores their cache.
@@ -101,6 +101,8 @@ class GuildMemberRoleManager extends DataManager {
 
   /**
    * Adds a role (or multiple roles) to the member.
+   *
+   * <info>Uses the idempotent PUT route for singular roles, otherwise PATCHes the underlying guild member</info>
    * @param {RoleResolvable|RoleResolvable[]|Collection<Snowflake, Role>} roleOrRoles The role or roles to add
    * @param {string} [reason] Reason for adding the role(s)
    * @returns {Promise<GuildMember>}
@@ -138,6 +140,8 @@ class GuildMemberRoleManager extends DataManager {
 
   /**
    * Removes a role (or multiple roles) from the member.
+   *
+   * <info>Uses the idempotent DELETE route for singular roles, otherwise PATCHes the underlying guild member</info>
    * @param {RoleResolvable|RoleResolvable[]|Collection<Snowflake, Role>} roleOrRoles The role or roles to remove
    * @param {string} [reason] Reason for removing the role(s)
    * @returns {Promise<GuildMember>}
@@ -201,4 +205,4 @@ class GuildMemberRoleManager extends DataManager {
   }
 }
 
-module.exports = GuildMemberRoleManager;
+exports.GuildMemberRoleManager = GuildMemberRoleManager;

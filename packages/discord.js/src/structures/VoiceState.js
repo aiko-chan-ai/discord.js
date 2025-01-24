@@ -1,8 +1,8 @@
 'use strict';
 
 const { ChannelType, Routes } = require('discord-api-types/v10');
-const Base = require('./Base');
-const { DiscordjsError, DiscordjsTypeError, ErrorCodes } = require('../errors');
+const { Base } = require('./Base.js');
+const { DiscordjsError, DiscordjsTypeError, ErrorCodes } = require('../errors/index.js');
 
 /**
  * Represents the voice state for a Guild Member.
@@ -251,6 +251,15 @@ class VoiceState extends Base {
   }
 
   /**
+   * Fetches this voice state.
+   * @param {boolean} [force=true] Whether to skip the cache check and request the API
+   * @returns {Promise<VoiceState>}
+   */
+  fetch(force = true) {
+    return this.guild.voiceStates.fetch(this.id, { force });
+  }
+
+  /**
    * Toggles the request to speak in the channel.
    * Only applicable for stage channels and for the client's own voice state.
    * @param {boolean} [requestToSpeak=true] Whether or not the client is requesting to become a speaker.
@@ -300,4 +309,4 @@ class VoiceState extends Base {
   }
 }
 
-module.exports = VoiceState;
+exports.VoiceState = VoiceState;

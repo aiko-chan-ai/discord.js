@@ -4,8 +4,8 @@ const { parse } = require('node:path');
 const { Collection } = require('@discordjs/collection');
 const { ChannelType, RouteBases, Routes } = require('discord-api-types/v10');
 const { fetch } = require('undici');
-const Colors = require('./Colors');
-const { DiscordjsError, DiscordjsRangeError, DiscordjsTypeError, ErrorCodes } = require('../errors');
+const { Colors } = require('./Colors.js');
+const { DiscordjsError, DiscordjsRangeError, DiscordjsTypeError, ErrorCodes } = require('../errors/index.js');
 const isObject = d => typeof d === 'object' && d !== null;
 
 /**
@@ -278,19 +278,28 @@ function verifyString(
  * @returns {number} A color
  */
 function resolveColor(color) {
+  let resolvedColor;
+
   if (typeof color === 'string') {
     if (color === 'Random') return Math.floor(Math.random() * (0xffffff + 1));
     if (color === 'Default') return 0;
     if (/^#?[\da-f]{6}$/i.test(color)) return parseInt(color.replace('#', ''), 16);
-    color = Colors[color];
+    resolvedColor = Colors[color];
   } else if (Array.isArray(color)) {
-    color = (color[0] << 16) + (color[1] << 8) + color[2];
+    resolvedColor = (color[0] << 16) + (color[1] << 8) + color[2];
+  } else {
+    resolvedColor = color;
   }
 
-  if (color < 0 || color > 0xffffff) throw new DiscordjsRangeError(ErrorCodes.ColorRange);
-  if (typeof color !== 'number' || Number.isNaN(color)) throw new DiscordjsTypeError(ErrorCodes.ColorConvert);
+  if (!Number.isInteger(resolvedColor)) {
+    throw new DiscordjsTypeError(ErrorCodes.ColorConvert, color);
+  }
 
-  return color;
+  if (resolvedColor < 0 || resolvedColor > 0xffffff) {
+    throw new DiscordjsRangeError(ErrorCodes.ColorRange);
+  }
+
+  return resolvedColor;
 }
 
 /**
@@ -300,7 +309,7 @@ function resolveColor(color) {
  */
 function discordSort(collection) {
   const isGuildChannel = collection.first() instanceof GuildChannel;
-  return collection.sorted(
+  return collection.toSorted(
     isGuildChannel
       ? (a, b) => a.rawPosition - b.rawPosition || Number(BigInt(a.id) - BigInt(b.id))
       : (a, b) => a.rawPosition - b.rawPosition || Number(BigInt(b.id) - BigInt(a.id)),
@@ -490,28 +499,26 @@ function resolveSKUId(resolvable) {
   return null;
 }
 
-module.exports = {
-  flatten,
-  fetchRecommendedShardCount,
-  parseEmoji,
-  resolvePartialEmoji,
-  makeError,
-  makePlainError,
-  getSortableGroupTypes,
-  moveElementInArray,
-  verifyString,
-  resolveColor,
-  discordSort,
-  setPosition,
-  basename,
-  cleanContent,
-  cleanCodeBlockContent,
-  parseWebhookURL,
-  transformResolved,
-  resolveSKUId,
-};
+exports.flatten = flatten;
+exports.fetchRecommendedShardCount = fetchRecommendedShardCount;
+exports.parseEmoji = parseEmoji;
+exports.resolvePartialEmoji = resolvePartialEmoji;
+exports.makeError = makeError;
+exports.makePlainError = makePlainError;
+exports.getSortableGroupTypes = getSortableGroupTypes;
+exports.moveElementInArray = moveElementInArray;
+exports.verifyString = verifyString;
+exports.resolveColor = resolveColor;
+exports.discordSort = discordSort;
+exports.setPosition = setPosition;
+exports.basename = basename;
+exports.cleanContent = cleanContent;
+exports.cleanCodeBlockContent = cleanCodeBlockContent;
+exports.parseWebhookURL = parseWebhookURL;
+exports.transformResolved = transformResolved;
+exports.resolveSKUId = resolveSKUId;
 
 // Fixes Circular
-const Attachment = require('../structures/Attachment');
-const GuildChannel = require('../structures/GuildChannel');
+const { Attachment } = require('../structures/Attachment.js');
+const { GuildChannel } = require('../structures/GuildChannel.js');
 const { SKU } = require('../structures/SKU.js');

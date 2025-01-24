@@ -44,25 +44,23 @@
 		"url": "https://github.com/discordjs/discord.js/issues"
 	},
 	"homepage": "https://discord.js.org",
+	"funding": "https://github.com/discordjs/discord.js?sponsor",
 	"dependencies": {
 		"@discordjs/api-extractor-model": "workspace:^",
 		"@microsoft/tsdoc": "0.14.2"
 	},
 	"devDependencies": {
-		"@types/node": "18.18.8",
+		"@types/node": "^20.17.10",
 		"cross-env": "^7.0.3",
-		"eslint": "^8.56.0",
-		"eslint-config-neon": "^0.1.57",
-		"eslint-formatter-pretty": "^5.0.0",
-		"prettier": "^3.1.1",
-		"tsup": "^7.2.0",
-		"turbo": "^1.11.2",
-		"typescript": "^5.2.2"
+		"eslint": "^8.57.1",
+		"eslint-config-neon": "^0.1.62",
+		"eslint-formatter-pretty": "^6.0.1",
+		"prettier": "^3.4.2",
+		"tsup": "^8.3.5",
+		"turbo": "^2.3.3",
+		"typescript": "~5.5.4"
 	},
 	"engines": {
-		"node": ">=18"
-	},
-	"publishConfig": {
-		"access": "public"
+		"node": ">=20"
 	}
 }

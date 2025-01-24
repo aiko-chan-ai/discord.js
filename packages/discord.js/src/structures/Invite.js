@@ -1,11 +1,10 @@
 'use strict';
 
 const { RouteBases, Routes, PermissionFlagsBits } = require('discord-api-types/v10');
-const Base = require('./Base');
-const { GuildScheduledEvent } = require('./GuildScheduledEvent');
-const IntegrationApplication = require('./IntegrationApplication');
-const InviteStageInstance = require('./InviteStageInstance');
-const { DiscordjsError, ErrorCodes } = require('../errors');
+const { Base } = require('./Base.js');
+const { GuildScheduledEvent } = require('./GuildScheduledEvent.js');
+const { IntegrationApplication } = require('./IntegrationApplication.js');
+const { DiscordjsError, ErrorCodes } = require('../errors/index.js');
 
 /**
  * Represents an invitation to a guild channel.
@@ -22,18 +21,25 @@ class Invite extends Base {
 
   constructor(client, data) {
     super(client);
+
+    /**
+     * The type of this invite
+     * @type {InviteType}
+     */
+    this.type = data.type;
+
     this._patch(data);
   }
 
   _patch(data) {
-    const InviteGuild = require('./InviteGuild');
+    const { InviteGuild } = require('./InviteGuild.js');
     /**
      * The guild the invite is for including welcome screen data if present
      * @type {?(Guild|InviteGuild)}
      */
     this.guild ??= null;
     if (data.guild) {
-      this.guild = this.client.guilds.resolve(data.guild.id) ?? new InviteGuild(this.client, data.guild);
+      this.guild = this.client.guilds.cache.get(data.guild.id) ?? new InviteGuild(this.client, data.guild);
     }
 
     if ('code' in data) {
@@ -195,17 +201,6 @@ class Invite extends Base {
       this._expiresTimestamp ??= null;
     }
 
-    if ('stage_instance' in data) {
-      /**
-       * The stage instance data if there is a public {@link StageInstance} in the stage channel this invite is for
-       * @type {?InviteStageInstance}
-       * @deprecated
-       */
-      this.stageInstance = new InviteStageInstance(this.client, data.stage_instance, this.channel.id, this.guild.id);
-    } else {
-      this.stageInstance ??= null;
-    }
-
     if ('guild_scheduled_event' in data) {
       /**
        * The guild scheduled event data if there is a {@link GuildScheduledEvent} in the channel this invite is for
@@ -319,4 +314,4 @@ class Invite extends Base {
   }
 }
 
-module.exports = Invite;
+exports.Invite = Invite;

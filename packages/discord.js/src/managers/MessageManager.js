@@ -3,12 +3,12 @@
 const { Collection } = require('@discordjs/collection');
 const { makeURLSearchParams } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v10');
-const CachedManager = require('./CachedManager');
-const { DiscordjsTypeError, ErrorCodes } = require('../errors');
-const { Message } = require('../structures/Message');
-const MessagePayload = require('../structures/MessagePayload');
-const { MakeCacheOverrideSymbol } = require('../util/Symbols');
-const { resolvePartialEmoji } = require('../util/Util');
+const { CachedManager } = require('./CachedManager.js');
+const { DiscordjsTypeError, ErrorCodes } = require('../errors/index.js');
+const { Message } = require('../structures/Message.js');
+const { MessagePayload } = require('../structures/MessagePayload.js');
+const { MakeCacheOverrideSymbol } = require('../util/Symbols.js');
+const { resolvePartialEmoji } = require('../util/Util.js');
 
 /**
  * Manages API methods for Messages and holds their cache.
@@ -178,9 +178,10 @@ class MessageManager extends CachedManager {
     const messageId = this.resolveId(message);
     if (!messageId) throw new DiscordjsTypeError(ErrorCodes.InvalidType, 'message', 'MessageResolvable');
 
-    const { body, files } = await (options instanceof MessagePayload
-      ? options
-      : MessagePayload.create(message instanceof Message ? message : this, options)
+    const { body, files } = await (
+      options instanceof MessagePayload
+        ? options
+        : MessagePayload.create(message instanceof Message ? message : this, options)
     )
       .resolveBody()
       .resolveFiles();
@@ -193,19 +194,6 @@ class MessageManager extends CachedManager {
       return clone;
     }
     return this._add(d);
-  }
-
-  /**
-   * Publishes a message in an announcement channel to all channels following it, even if it's not cached.
-   * @param {MessageResolvable} message The message to publish
-   * @returns {Promise<Message>}
-   */
-  async crosspost(message) {
-    message = this.resolveId(message);
-    if (!message) throw new DiscordjsTypeError(ErrorCodes.InvalidType, 'message', 'MessageResolvable');
-
-    const data = await this.client.rest.post(Routes.channelMessageCrosspost(this.channel.id, message));
-    return this.cache.get(data.id) ?? this._add(data);
   }
 
   /**
@@ -265,6 +253,36 @@ class MessageManager extends CachedManager {
 
     await this.client.rest.delete(Routes.channelMessage(this.channel.id, message));
   }
+
+  /**
+   * Ends a poll.
+   * @param {Snowflake} messageId The id of the message
+   * @returns {Promise<Message>}
+   */
+  async endPoll(messageId) {
+    const message = await this.client.rest.post(Routes.expirePoll(this.channel.id, messageId));
+    return this._add(message, false);
+  }
+
+  /**
+   * Options used for fetching voters of an answer in a poll.
+   * @typedef {BaseFetchPollAnswerVotersOptions} FetchPollAnswerVotersOptions
+   * @param {Snowflake} messageId The id of the message
+   * @param {number} answerId The id of the answer
+   */
+
+  /**
+   * Fetches the users that voted for a poll answer.
+   * @param {FetchPollAnswerVotersOptions} options The options for fetching the poll answer voters
+   * @returns {Promise<Collection<Snowflake, User>>}
+   */
+  async fetchPollAnswerVoters({ messageId, answerId, after, limit }) {
+    const voters = await this.client.rest.get(Routes.pollAnswerVoters(this.channel.id, messageId, answerId), {
+      query: makeURLSearchParams({ limit, after }),
+    });
+
+    return voters.users.reduce((acc, user) => acc.set(user.id, this.client.users._add(user, false)), new Collection());
+  }
 }
 
-module.exports = MessageManager;
+exports.MessageManager = MessageManager;

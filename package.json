@@ -6,20 +6,20 @@
 	"private": true,
 	"scripts": {
 		"build": "turbo run build --concurrency=4",
-		"build:affected": "turbo run build --filter='...[origin/main]' --concurrency=4",
-		"build:apps": "turbo run build:local --filter='...{apps/*}' --concurrency=4",
-		"build:apps:affected": "turbo run build:local --filter='...{apps/*}[origin/main]' --concurrency=4",
+		"build:affected": "turbo run build --filter=...[origin/main] --concurrency=4",
+		"build:apps": "turbo run build:local --filter=...{apps/*} --concurrency=4",
+		"build:apps:affected": "turbo run build:local --filter=...{apps/*}[origin/main] --concurrency=4",
 		"test": "turbo run test --concurrency=4",
-		"test:affected": "turbo run test --filter='...[origin/main]' --concurrency=4",
+		"test:affected": "turbo run test --filter=...[origin/main] --concurrency=4",
 		"lint": "turbo run lint --concurrency=4",
-		"lint:affected": "turbo run lint --filter='...[origin/main]' --concurrency=4",
+		"lint:affected": "turbo run lint --filter=...[origin/main] --concurrency=4",
 		"format": "turbo run format --concurrency=4",
-		"format:affected": "turbo run format --filter='...[origin/main]' --concurrency=4",
+		"format:affected": "turbo run format --filter=...[origin/main] --concurrency=4",
 		"fmt": "turbo run format --concurrency=4",
-		"fmt:affected": "turbo run format --filter='...[origin/main]' --concurrency=4",
+		"fmt:affected": "turbo run format --filter=...[origin/main] --concurrency=4",
 		"docs": "turbo run docs --concurrency=4",
-		"docs:affected": "turbo run docs --filter='...[origin/main]' --concurrency=4",
-		"prepare": "is-ci || husky install",
+		"docs:affected": "turbo run docs --filter=...[origin/main] --concurrency=4",
+		"prepare": "is-ci || husky",
 		"update": "pnpm --recursive update --interactive",
 		"update:latest": "pnpm --recursive update --interactive --latest",
 		"create-package": "turbo gen create-package --args"
@@ -28,7 +28,7 @@
 	"contributors": [
 		"Crawl <icrawltogo@gmail.com>",
 		"Amish Shah <amishshah.2k@gmail.com>",
-		"Vlad Frangu <kingdgrizzle@gmail.com>",
+		"Vlad Frangu <me@vladfrangu.dev>",
 		"SpaceEEC <spaceeec@yahoo.com>",
 		"Aura Román <kyradiscord@gmail.com>"
 	],
@@ -48,28 +48,30 @@
 		"url": "https://github.com/discordjs/discord.js/issues"
 	},
 	"homepage": "https://discord.js.org",
+	"funding": "https://github.com/discordjs/discord.js?sponsor",
 	"devDependencies": {
-		"@commitlint/cli": "^18.4.3",
-		"@commitlint/config-angular": "^18.4.3",
-		"@favware/cliff-jumper": "^2.2.3",
-		"@favware/npm-deprecate": "^1.0.7",
+		"@commitlint/cli": "^19.6.1",
+		"@commitlint/config-angular": "^19.6.0",
+		"@favware/cliff-jumper": "^4.1.0",
+		"@favware/npm-deprecate": "^2.0.0",
 		"@types/lodash.merge": "^4.6.9",
-		"@unocss/eslint-plugin": "^0.57.7",
-		"@vitest/coverage-v8": "^0.34.6",
+		"@unocss/eslint-plugin": "^0.65.3",
+		"@vitest/coverage-v8": "^2.1.8",
 		"conventional-changelog-cli": "^4.1.0",
-		"eslint": "^8.56.0",
-		"eslint-config-neon": "^0.1.57",
-		"husky": "^8.0.3",
-		"is-ci": "^3.0.1",
-		"lint-staged": "^15.2.0",
+		"eslint": "^8.57.1",
+		"eslint-config-neon": "^0.1.62",
+		"husky": "^9.1.7",
+		"is-ci": "^4.1.0",
+		"lint-staged": "^15.3.0",
 		"lodash.merge": "^4.6.2",
-		"prettier": "^3.1.1",
-		"tsup": "^7.2.0",
-		"turbo": "^1.11.2",
-		"typescript": "^5.2.2",
-		"unocss": "^0.57.3",
-		"vercel": "^32.7.2",
-		"vitest": "^0.34.6"
+		"prettier": "^3.4.2",
+		"tsup": "^8.3.5",
+		"turbo": "^2.3.3",
+		"typescript": "~5.5.4",
+		"typescript-eslint": "^8.19.0",
+		"unocss": "^0.65.3",
+		"vercel": "^39.2.2",
+		"vitest": "^2.1.8"
 	},
 	"pnpm": {
 		"peerDependencyRules": {
@@ -93,7 +95,7 @@
 		}
 	},
 	"engines": {
-		"node": ">=18"
+		"node": ">=20"
 	},
-	"packageManager": "pnpm@8.10.2"
+	"packageManager": "pnpm@9.15.2"
 }

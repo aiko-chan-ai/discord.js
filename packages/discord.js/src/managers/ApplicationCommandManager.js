@@ -4,11 +4,11 @@ const { Collection } = require('@discordjs/collection');
 const { makeURLSearchParams } = require('@discordjs/rest');
 const { isJSONEncodable } = require('@discordjs/util');
 const { Routes } = require('discord-api-types/v10');
-const ApplicationCommandPermissionsManager = require('./ApplicationCommandPermissionsManager');
-const CachedManager = require('./CachedManager');
-const { DiscordjsTypeError, ErrorCodes } = require('../errors');
-const ApplicationCommand = require('../structures/ApplicationCommand');
-const PermissionsBitField = require('../util/PermissionsBitField');
+const { ApplicationCommandPermissionsManager } = require('./ApplicationCommandPermissionsManager.js');
+const { CachedManager } = require('./CachedManager.js');
+const { DiscordjsTypeError, ErrorCodes } = require('../errors/index.js');
+const { ApplicationCommand } = require('../structures/ApplicationCommand.js');
+const { PermissionsBitField } = require('../util/PermissionsBitField.js');
 
 /**
  * Manages API methods for application commands and stores their cache.
@@ -82,7 +82,7 @@ class ApplicationCommandManager extends CachedManager {
    * Options used to fetch Application Commands from Discord
    * @typedef {BaseFetchOptions} FetchApplicationCommandOptions
    * @property {Snowflake} [guildId] The guild's id to fetch commands for, for when the guild is not cached
-   * @property {LocaleString} [locale] The locale to use when fetching this command
+   * @property {Locale} [locale] The locale to use when fetching this command
    * @property {boolean} [withLocalizations] Whether to fetch all localization data
    */
 
@@ -258,9 +258,10 @@ class ApplicationCommandManager extends CachedManager {
       type: command.type,
       options: command.options?.map(option => ApplicationCommand.transformOption(option)),
       default_member_permissions,
-      dm_permission: command.dmPermission ?? command.dm_permission,
+      integration_types: command.integrationTypes ?? command.integration_types,
+      contexts: command.contexts,
     };
   }
 }
 
-module.exports = ApplicationCommandManager;
+exports.ApplicationCommandManager = ApplicationCommandManager;

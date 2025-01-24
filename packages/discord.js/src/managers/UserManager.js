@@ -1,12 +1,12 @@
 'use strict';
 
 const { ChannelType, Routes } = require('discord-api-types/v10');
-const CachedManager = require('./CachedManager');
-const { DiscordjsError, ErrorCodes } = require('../errors');
-const { GuildMember } = require('../structures/GuildMember');
-const { Message } = require('../structures/Message');
-const ThreadMember = require('../structures/ThreadMember');
-const User = require('../structures/User');
+const { CachedManager } = require('./CachedManager.js');
+const { DiscordjsError, ErrorCodes } = require('../errors/index.js');
+const { GuildMember } = require('../structures/GuildMember.js');
+const { Message } = require('../structures/Message.js');
+const { ThreadMember } = require('../structures/ThreadMember.js');
+const { User } = require('../structures/User.js');
 
 /**
  * Manages API methods for users and stores their cache.
@@ -96,16 +96,6 @@ class UserManager extends CachedManager {
   }
 
   /**
-   * Fetches a user's flags.
-   * @param {UserResolvable} user The UserResolvable to identify
-   * @param {BaseFetchOptions} [options] Additional options for this fetch
-   * @returns {Promise<UserFlagsBitField>}
-   */
-  async fetchFlags(user, options) {
-    return (await this.fetch(user, options)).flags;
-  }
-
-  /**
    * Sends a message to a user.
    * @param {UserResolvable} user The UserResolvable to identify
    * @param {string|MessagePayload|MessageCreateOptions} options The options to provide
@@ -139,4 +129,4 @@ class UserManager extends CachedManager {
   }
 }
 
-module.exports = UserManager;
+exports.UserManager = UserManager;

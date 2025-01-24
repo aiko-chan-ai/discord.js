@@ -1,12 +1,8 @@
 /* eslint-disable id-length */
 import { setImmediate } from 'node:timers';
 import { REST } from '@discordjs/rest';
-import {
-	GatewayDispatchEvents,
-	GatewayOpcodes,
-	type GatewayDispatchPayload,
-	type GatewaySendPayload,
-} from 'discord-api-types/v10';
+import type { RESTGetAPIGatewayBotResult, GatewayDispatchPayload, GatewaySendPayload } from 'discord-api-types/v10';
+import { GatewayDispatchEvents, GatewayOpcodes, Routes } from 'discord-api-types/v10';
 import { MockAgent, type Interceptable } from 'undici';
 import { beforeEach, test, vi, expect, afterEach } from 'vitest';
 import {
@@ -91,7 +87,7 @@ vi.mock('node:worker_threads', async () => {
 							op: WorkerReceivePayloadOp.Event,
 							shardId: message.shardId,
 							event: WebSocketShardEvents.Dispatch,
-							data: memberChunkData,
+							data: [memberChunkData],
 						};
 						this.emit('message', response);
 
@@ -159,7 +155,9 @@ test('spawn, connect, send a message, session info, and destroy', async () => {
 	const manager = new WebSocketManager({
 		token: 'A-Very-Fake-Token',
 		intents: 0,
-		rest,
+		async fetchGatewayInformation() {
+			return rest.get(Routes.gatewayBot()) as Promise<RESTGetAPIGatewayBotResult>;
+		},
 		shardIds: [0, 1],
 		retrieveSessionInfo: mockRetrieveSessionInfo,
 		updateSessionInfo: mockUpdateSessionInfo,
@@ -204,10 +202,13 @@ test('spawn, connect, send a message, session info, and destroy', async () => {
 	};
 	await manager.send(0, payload);
 	expect(mockSend).toHaveBeenCalledWith(0, payload);
-	expect(managerEmitSpy).toHaveBeenCalledWith(WebSocketShardEvents.Dispatch, {
-		...memberChunkData,
-		shardId: 0,
-	});
+	expect(managerEmitSpy).toHaveBeenCalledWith(
+		WebSocketShardEvents.Dispatch,
+		{
+			...memberChunkData,
+		},
+		0,
+	);
 	expect(mockRetrieveSessionInfo).toHaveBeenCalledWith(0);
 	expect(mockUpdateSessionInfo).toHaveBeenCalledWith(0, { ...sessionInfo, sequence: sessionInfo.sequence + 1 });
 
