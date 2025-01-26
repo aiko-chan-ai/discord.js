@@ -1,7 +1,7 @@
 'use strict';
 
 const { ApplicationCommandOptionType } = require('discord-api-types/v10');
-const { DiscordjsTypeError, ErrorCodes } = require('../errors');
+const { DiscordjsTypeError, ErrorCodes } = require('../errors/index.js');
 
 /**
  * A resolver for command interaction options.
@@ -294,15 +294,14 @@ class CommandInteractionOptionResolver {
 
   /**
    * Gets the focused option.
-   * @param {boolean} [getFull=false] Whether to get the full option object
-   * @returns {string|AutocompleteFocusedOption}
-   * The value of the option, or the whole option if getFull is true
+   * @returns {AutocompleteFocusedOption}
+   * The whole object of the option that is focused
    */
-  getFocused(getFull = false) {
+  getFocused() {
     const focusedOption = this._hoistedOptions.find(option => option.focused);
     if (!focusedOption) throw new DiscordjsTypeError(ErrorCodes.AutocompleteInteractionOptionNoFocusedOption);
-    return getFull ? focusedOption : focusedOption.value;
+    return focusedOption;
   }
 }
 
-module.exports = CommandInteractionOptionResolver;
+exports.CommandInteractionOptionResolver = CommandInteractionOptionResolver;

@@ -4,32 +4,31 @@ const { Collection } = require('@discordjs/collection');
 const { makeURLSearchParams } = require('@discordjs/rest');
 const { DiscordSnowflake } = require('@sapphire/snowflake');
 const { ChannelType, GuildPremiumTier, Routes, GuildFeature } = require('discord-api-types/v10');
-const AnonymousGuild = require('./AnonymousGuild');
-const GuildAuditLogs = require('./GuildAuditLogs');
-const { GuildOnboarding } = require('./GuildOnboarding');
-const GuildPreview = require('./GuildPreview');
-const GuildTemplate = require('./GuildTemplate');
-const Integration = require('./Integration');
-const Webhook = require('./Webhook');
-const WelcomeScreen = require('./WelcomeScreen');
-const { DiscordjsError, DiscordjsTypeError, ErrorCodes } = require('../errors');
-const AutoModerationRuleManager = require('../managers/AutoModerationRuleManager');
-const GuildApplicationCommandManager = require('../managers/GuildApplicationCommandManager');
-const GuildBanManager = require('../managers/GuildBanManager');
-const GuildChannelManager = require('../managers/GuildChannelManager');
-const GuildEmojiManager = require('../managers/GuildEmojiManager');
-const GuildInviteManager = require('../managers/GuildInviteManager');
-const GuildMemberManager = require('../managers/GuildMemberManager');
-const GuildScheduledEventManager = require('../managers/GuildScheduledEventManager');
-const GuildStickerManager = require('../managers/GuildStickerManager');
-const PresenceManager = require('../managers/PresenceManager');
-const RoleManager = require('../managers/RoleManager');
-const StageInstanceManager = require('../managers/StageInstanceManager');
-const VoiceStateManager = require('../managers/VoiceStateManager');
-const { resolveImage } = require('../util/DataResolver');
-const Status = require('../util/Status');
-const SystemChannelFlagsBitField = require('../util/SystemChannelFlagsBitField');
-const { discordSort, getSortableGroupTypes, resolvePartialEmoji } = require('../util/Util');
+const { AnonymousGuild } = require('./AnonymousGuild.js');
+const { GuildAuditLogs } = require('./GuildAuditLogs.js');
+const { GuildOnboarding } = require('./GuildOnboarding.js');
+const { GuildPreview } = require('./GuildPreview.js');
+const { GuildTemplate } = require('./GuildTemplate.js');
+const { Integration } = require('./Integration.js');
+const { Webhook } = require('./Webhook.js');
+const { WelcomeScreen } = require('./WelcomeScreen.js');
+const { DiscordjsError, DiscordjsTypeError, ErrorCodes } = require('../errors/index.js');
+const { AutoModerationRuleManager } = require('../managers/AutoModerationRuleManager.js');
+const { GuildApplicationCommandManager } = require('../managers/GuildApplicationCommandManager.js');
+const { GuildBanManager } = require('../managers/GuildBanManager.js');
+const { GuildChannelManager } = require('../managers/GuildChannelManager.js');
+const { GuildEmojiManager } = require('../managers/GuildEmojiManager.js');
+const { GuildInviteManager } = require('../managers/GuildInviteManager.js');
+const { GuildMemberManager } = require('../managers/GuildMemberManager.js');
+const { GuildScheduledEventManager } = require('../managers/GuildScheduledEventManager.js');
+const { GuildStickerManager } = require('../managers/GuildStickerManager.js');
+const { PresenceManager } = require('../managers/PresenceManager.js');
+const { RoleManager } = require('../managers/RoleManager.js');
+const { StageInstanceManager } = require('../managers/StageInstanceManager.js');
+const { VoiceStateManager } = require('../managers/VoiceStateManager.js');
+const { resolveImage } = require('../util/DataResolver.js');
+const { SystemChannelFlagsBitField } = require('../util/SystemChannelFlagsBitField.js');
+const { discordSort, getSortableGroupTypes, resolvePartialEmoji } = require('../util/Util.js');
 
 /**
  * Represents a guild (or a server) on Discord.
@@ -126,15 +125,6 @@ class Guild extends AnonymousGuild {
     this.shardId = data.shardId;
   }
 
-  /**
-   * The Shard this Guild belongs to.
-   * @type {WebSocketShard}
-   * @readonly
-   */
-  get shard() {
-    return this.client.ws.shards.get(this.shardId);
-  }
-
   _patch(data) {
     super._patch(data);
     this.id = data.id;
@@ -164,7 +154,7 @@ class Guild extends AnonymousGuild {
 
     if ('large' in data) {
       /**
-       * Whether the guild is "large" (has more than {@link WebsocketOptions large_threshold} members, 50 by default)
+       * Whether the guild is "large" (has more than {@link WebSocketOptions large_threshold} members, 50 by default)
        * @type {boolean}
        */
       this.large = Boolean(data.large);
@@ -291,7 +281,8 @@ class Guild extends AnonymousGuild {
     if ('max_presences' in data) {
       /**
        * The maximum amount of presences the guild can have (this is `null` for all but the largest of guilds)
-       * <info>You will need to fetch the guild using {@link Guild#fetch} if you want to receive this parameter</info>
+       * <info>You will need to fetch the guild using {@link BaseGuild#fetch} if you want to receive
+       * this parameter</info>
        * @type {?number}
        */
       this.maximumPresences = data.max_presences;
@@ -322,7 +313,8 @@ class Guild extends AnonymousGuild {
     if ('approximate_member_count' in data) {
       /**
        * The approximate amount of members the guild has
-       * <info>You will need to fetch the guild using {@link Guild#fetch} if you want to receive this parameter</info>
+       * <info>You will need to fetch the guild using {@link BaseGuild#fetch} if you want to receive
+       * this parameter</info>
        * @type {?number}
        */
       this.approximateMemberCount = data.approximate_member_count;
@@ -333,7 +325,8 @@ class Guild extends AnonymousGuild {
     if ('approximate_presence_count' in data) {
       /**
        * The approximate amount of presences the guild has
-       * <info>You will need to fetch the guild using {@link Guild#fetch} if you want to receive this parameter</info>
+       * <info>You will need to fetch the guild using {@link BaseGuild#fetch} if you want to receive
+       * this parameter</info>
        * @type {?number}
        */
       this.approximatePresenceCount = data.approximate_presence_count;
@@ -495,7 +488,7 @@ class Guild extends AnonymousGuild {
    */
   async fetchOwner(options) {
     if (!this.ownerId) {
-      throw new DiscordjsError(ErrorCodes.FetchOwnerId);
+      throw new DiscordjsError(ErrorCodes.FetchOwnerId, 'guild');
     }
     const member = await this.members.fetch({ ...options, user: this.ownerId });
     return member;
@@ -521,7 +514,7 @@ class Guild extends AnonymousGuild {
 
   /**
    * Widget channel for this guild
-   * @type {?(TextChannel|NewsChannel|VoiceChannel|StageChannel|ForumChannel|MediaChannel)}
+   * @type {?(TextChannel|AnnouncementChannel|VoiceChannel|StageChannel|ForumChannel|MediaChannel)}
    * @readonly
    */
   get widgetChannel() {
@@ -694,7 +687,7 @@ class Guild extends AnonymousGuild {
    * Data for the Guild Widget Settings object
    * @typedef {Object} GuildWidgetSettings
    * @property {boolean} enabled Whether the widget is enabled
-   * @property {?(TextChannel|NewsChannel|VoiceChannel|StageChannel|ForumChannel|MediaChannel)} channel
+   * @property {?(TextChannel|AnnouncementChannel|VoiceChannel|StageChannel|ForumChannel|MediaChannel)} channel
    * The widget invite channel
    */
 
@@ -702,8 +695,8 @@ class Guild extends AnonymousGuild {
    * The Guild Widget Settings object
    * @typedef {Object} GuildWidgetSettingsData
    * @property {boolean} enabled Whether the widget is enabled
-   * @property {?(TextChannel|NewsChannel|VoiceChannel|StageChannel|ForumChannel|MediaChannel|Snowflake)} channel
-   * The widget invite channel
+   * @property {?(TextChannel|AnnouncementChannel|VoiceChannel|StageChannel|ForumChannel|
+   * MediaChannel|Snowflake)} channel The widget invite channel
    */
 
   /**
@@ -792,7 +785,7 @@ class Guild extends AnonymousGuild {
    * @property {?VoiceChannelResolvable} [afkChannel] The AFK channel of the guild
    * @property {number} [afkTimeout] The AFK timeout of the guild
    * @property {?(BufferResolvable|Base64Resolvable)} [icon] The icon of the guild
-   * @property {GuildMemberResolvable} [owner] The owner of the guild
+   * @property {UserResolvable} [owner] The owner of the guild
    * @property {?(BufferResolvable|Base64Resolvable)} [splash] The invite splash image of the guild
    * @property {?(BufferResolvable|Base64Resolvable)} [discoverySplash] The discovery splash image of the guild
    * @property {?(BufferResolvable|Base64Resolvable)} [banner] The banner of the guild
@@ -965,7 +958,7 @@ class Guild extends AnonymousGuild {
    * Welcome channel data
    * @typedef {Object} WelcomeChannelData
    * @property {string} description The description to show for this welcome channel
-   * @property {TextChannel|NewsChannel|ForumChannel|MediaChannel|Snowflake} channel
+   * @property {TextChannel|AnnouncementChannel|ForumChannel|MediaChannel|Snowflake} channel
    * The channel to link for this welcome channel
    * @property {EmojiIdentifierResolvable} [emoji] The emoji to display for this welcome channel
    */
@@ -981,9 +974,9 @@ class Guild extends AnonymousGuild {
   /**
    * Data that can be resolved to a GuildTextChannel object. This can be:
    * * A TextChannel
-   * * A NewsChannel
+   * * A AnnouncementChannel
    * * A Snowflake
-   * @typedef {TextChannel|NewsChannel|Snowflake} GuildTextChannelResolvable
+   * @typedef {TextChannel|AnnouncementChannel|Snowflake} GuildTextChannelResolvable
    */
 
   /**
@@ -1155,7 +1148,7 @@ class Guild extends AnonymousGuild {
 
   /**
    * Sets a new owner of the guild.
-   * @param {GuildMemberResolvable} owner The new owner of the guild
+   * @param {UserResolvable} owner The new owner of the guild
    * @param {string} [reason] Reason for setting the new owner
    * @returns {Promise<Guild>}
    * @example
@@ -1415,8 +1408,7 @@ class Guild extends AnonymousGuild {
       this.client.voice.adapters.set(this.id, methods);
       return {
         sendPayload: data => {
-          if (this.shard.status !== Status.Ready) return false;
-          this.shard.send(data);
+          this.client.ws.send(this.shardId, data);
           return true;
         },
         destroy: () => {

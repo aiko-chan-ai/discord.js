@@ -2,20 +2,22 @@
 
 const { Collection } = require('@discordjs/collection');
 const { Routes } = require('discord-api-types/v10');
-const { ApplicationRoleConnectionMetadata } = require('./ApplicationRoleConnectionMetadata');
-const { SKU } = require('./SKU');
-const Team = require('./Team');
-const Application = require('./interfaces/Application');
-const ApplicationCommandManager = require('../managers/ApplicationCommandManager');
-const { EntitlementManager } = require('../managers/EntitlementManager');
-const ApplicationFlagsBitField = require('../util/ApplicationFlagsBitField');
-const { resolveImage } = require('../util/DataResolver');
-const PermissionsBitField = require('../util/PermissionsBitField');
+const { ApplicationRoleConnectionMetadata } = require('./ApplicationRoleConnectionMetadata.js');
+const { SKU } = require('./SKU.js');
+const { Team } = require('./Team.js');
+const { Application } = require('./interfaces/Application.js');
+const { ApplicationCommandManager } = require('../managers/ApplicationCommandManager.js');
+const { ApplicationEmojiManager } = require('../managers/ApplicationEmojiManager.js');
+const { EntitlementManager } = require('../managers/EntitlementManager.js');
+const { SubscriptionManager } = require('../managers/SubscriptionManager.js');
+const { ApplicationFlagsBitField } = require('../util/ApplicationFlagsBitField.js');
+const { resolveImage } = require('../util/DataResolver.js');
+const { PermissionsBitField } = require('../util/PermissionsBitField.js');
 
 /**
  * @typedef {Object} ClientApplicationInstallParams
- * @property {OAuth2Scopes[]} scopes The scopes to add the application to the server with
- * @property {Readonly<PermissionsBitField>} permissions The permissions this bot will request upon joining
+ * @property {OAuth2Scopes[]} scopes Scopes that will be set upon adding this application
+ * @property {Readonly<PermissionsBitField>} permissions Permissions that will be requested for the integrated role
  */
 
 /**
@@ -33,10 +35,22 @@ class ClientApplication extends Application {
     this.commands = new ApplicationCommandManager(this.client);
 
     /**
+     * The application emoji manager for this application
+     * @type {ApplicationEmojiManager}
+     */
+    this.emojis = new ApplicationEmojiManager(this);
+
+    /**
      * The entitlement manager for this application
      * @type {EntitlementManager}
      */
     this.entitlements = new EntitlementManager(this.client);
+
+    /**
+     * The subscription manager for this application
+     * @type {SubscriptionManager}
+     */
+    this.subscriptions = new SubscriptionManager(this.client);
   }
 
   _patch(data) {
@@ -59,6 +73,56 @@ class ClientApplication extends Application {
       };
     } else {
       this.installParams ??= null;
+    }
+
+    /**
+     * OAuth2 installation parameters.
+     * @typedef {Object} IntegrationTypesConfigurationParameters
+     * @property {OAuth2Scopes[]} scopes Scopes that will be set upon adding this application
+     * @property {Readonly<PermissionsBitField>} permissions Permissions that will be requested for the integrated role
+     */
+
+    /**
+     * The application's supported installation context data.
+     * @typedef {Object} IntegrationTypesConfigurationContext
+     * @property {?IntegrationTypesConfigurationParameters} oauth2InstallParams
+     * Scopes and permissions regarding the installation context
+     */
+
+    /**
+     * The application's supported installation context data.
+     * @typedef {Object} IntegrationTypesConfiguration
+     * @property {IntegrationTypesConfigurationContext} [0] Scopes and permissions
+     * regarding the guild-installation context
+     * @property {IntegrationTypesConfigurationContext} [1] Scopes and permissions
+     * regarding the user-installation context
+     */
+
+    if ('integration_types_config' in data) {
+      /**
+       * Default scopes and permissions for each supported installation context.
+       * The keys are stringified variants of {@link ApplicationIntegrationType}.
+       * @type {?IntegrationTypesConfiguration}
+       */
+      this.integrationTypesConfig = Object.fromEntries(
+        Object.entries(data.integration_types_config).map(([key, config]) => {
+          let oauth2InstallParams = null;
+          if (config.oauth2_install_params) {
+            oauth2InstallParams = {
+              scopes: config.oauth2_install_params.scopes,
+              permissions: new PermissionsBitField(config.oauth2_install_params.permissions).freeze(),
+            };
+          }
+
+          const context = {
+            oauth2InstallParams,
+          };
+
+          return [key, context];
+        }),
+      );
+    } else {
+      this.integrationTypesConfig ??= null;
     }
 
     if ('custom_install_url' in data) {
@@ -89,6 +153,16 @@ class ClientApplication extends Application {
       this.approximateGuildCount ??= null;
     }
 
+    if ('approximate_user_install_count' in data) {
+      /**
+       * An approximate amount of users that have installed this application.
+       * @type {?number}
+       */
+      this.approximateUserInstallCount = data.approximate_user_install_count;
+    } else {
+      this.approximateUserInstallCount ??= null;
+    }
+
     if ('guild_id' in data) {
       /**
        * The id of the guild associated with this application.
@@ -97,26 +171,6 @@ class ClientApplication extends Application {
       this.guildId = data.guild_id;
     } else {
       this.guildId ??= null;
-    }
-
-    if ('cover_image' in data) {
-      /**
-       * The hash of the application's cover image
-       * @type {?string}
-       */
-      this.cover = data.cover_image;
-    } else {
-      this.cover ??= null;
-    }
-
-    if ('rpc_origins' in data) {
-      /**
-       * The application's RPC origins, if enabled
-       * @type {string[]}
-       */
-      this.rpcOrigins = data.rpc_origins;
-    } else {
-      this.rpcOrigins ??= [];
     }
 
     if ('bot_require_code_grant' in data) {
@@ -169,6 +223,36 @@ class ClientApplication extends Application {
       this.roleConnectionsVerificationURL ??= null;
     }
 
+    if ('event_webhooks_url' in data) {
+      /**
+       * This application's URL to receive event webhooks
+       * @type {?string}
+       */
+      this.eventWebhooksURL = data.event_webhooks_url;
+    } else {
+      this.eventWebhooksURL ??= null;
+    }
+
+    if ('event_webhooks_status' in data) {
+      /**
+       * This application's event webhooks status
+       * @type {?ApplicationWebhookEventStatus}
+       */
+      this.eventWebhooksStatus = data.event_webhooks_status;
+    } else {
+      this.eventWebhooksStatus ??= null;
+    }
+
+    if ('event_webhooks_types' in data) {
+      /**
+       * List of event webhooks types this application subscribes to
+       * @type {?ApplicationWebhookEventType[]}
+       */
+      this.eventWebhooksTypes = data.event_webhooks_types;
+    } else {
+      this.eventWebhooksTypes ??= null;
+    }
+
     /**
      * The owner of this OAuth application
      * @type {?(User|Team)}
@@ -177,7 +261,7 @@ class ClientApplication extends Application {
       ? new Team(this.client, data.team)
       : data.owner
         ? this.client.users._add(data.owner)
-        : this.owner ?? null;
+        : (this.owner ?? null);
   }
 
   /**
@@ -210,6 +294,10 @@ class ClientApplication extends Application {
    * @property {?(BufferResolvable|Base64Resolvable)} [icon] The application's icon
    * @property {?(BufferResolvable|Base64Resolvable)} [coverImage] The application's cover image
    * @property {string} [interactionsEndpointURL] The application's interaction endpoint URL
+   * @property {string} [eventWebhooksURL] The application's event webhooks URL
+   * @property {ApplicationWebhookEventStatus.Enabled|ApplicationWebhookEventStatus.Disabled} [eventWebhooksStatus]
+   * The application's event webhooks status.
+   * @property {ApplicationWebhookEventType[]} [eventWebhooksTypes] The application's event webhooks types
    * @property {string[]} [tags] The application's tags
    */
 
@@ -227,6 +315,9 @@ class ClientApplication extends Application {
     icon,
     coverImage,
     interactionsEndpointURL,
+    eventWebhooksURL,
+    eventWebhooksStatus,
+    eventWebhooksTypes,
     tags,
   } = {}) {
     const data = await this.client.rest.patch(Routes.currentApplication(), {
@@ -239,6 +330,9 @@ class ClientApplication extends Application {
         icon: icon && (await resolveImage(icon)),
         cover_image: coverImage && (await resolveImage(coverImage)),
         interactions_endpoint_url: interactionsEndpointURL,
+        event_webhooks_url: eventWebhooksURL,
+        event_webhooks_status: eventWebhooksStatus,
+        event_webhooks_types: eventWebhooksTypes,
         tags,
       },
     });
@@ -307,4 +401,4 @@ class ClientApplication extends Application {
   }
 }
 
-module.exports = ClientApplication;
+exports.ClientApplication = ClientApplication;

@@ -1,7 +1,7 @@
 'use strict';
 
-const AttachmentFlagsBitField = require('../util/AttachmentFlagsBitField.js');
-const { basename, flatten } = require('../util/Util');
+const { AttachmentFlagsBitField } = require('../util/AttachmentFlagsBitField.js');
+const { basename, flatten } = require('../util/Util.js');
 
 /**
  * @typedef {Object} AttachmentPayload
@@ -133,6 +133,17 @@ class Attachment {
     } else {
       this.flags ??= new AttachmentFlagsBitField().freeze();
     }
+
+    if ('title' in data) {
+      /**
+       * The title of this attachment
+       * <info>This will only be available if the attachment name contains special characters.</info>
+       * @type {?string}
+       */
+      this.title = data.title;
+    } else {
+      this.title ??= null;
+    }
   }
 
   /**
@@ -149,4 +160,4 @@ class Attachment {
   }
 }
 
-module.exports = Attachment;
+exports.Attachment = Attachment;

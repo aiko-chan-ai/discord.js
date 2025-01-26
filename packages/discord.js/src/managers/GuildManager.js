@@ -5,20 +5,20 @@ const { setTimeout, clearTimeout } = require('node:timers');
 const { Collection } = require('@discordjs/collection');
 const { makeURLSearchParams } = require('@discordjs/rest');
 const { Routes, RouteBases } = require('discord-api-types/v10');
-const CachedManager = require('./CachedManager');
-const ShardClientUtil = require('../sharding/ShardClientUtil');
-const { Guild } = require('../structures/Guild');
-const GuildChannel = require('../structures/GuildChannel');
-const GuildEmoji = require('../structures/GuildEmoji');
-const { GuildMember } = require('../structures/GuildMember');
-const Invite = require('../structures/Invite');
-const OAuth2Guild = require('../structures/OAuth2Guild');
-const { Role } = require('../structures/Role');
-const { resolveImage } = require('../util/DataResolver');
-const Events = require('../util/Events');
-const PermissionsBitField = require('../util/PermissionsBitField');
-const SystemChannelFlagsBitField = require('../util/SystemChannelFlagsBitField');
-const { resolveColor } = require('../util/Util');
+const { CachedManager } = require('./CachedManager.js');
+const { ShardClientUtil } = require('../sharding/ShardClientUtil.js');
+const { Guild } = require('../structures/Guild.js');
+const { GuildChannel } = require('../structures/GuildChannel.js');
+const { GuildEmoji } = require('../structures/GuildEmoji.js');
+const { GuildMember } = require('../structures/GuildMember.js');
+const { Invite } = require('../structures/Invite.js');
+const { OAuth2Guild } = require('../structures/OAuth2Guild.js');
+const { Role } = require('../structures/Role.js');
+const { resolveImage } = require('../util/DataResolver.js');
+const { Events } = require('../util/Events.js');
+const { PermissionsBitField } = require('../util/PermissionsBitField.js');
+const { SystemChannelFlagsBitField } = require('../util/SystemChannelFlagsBitField.js');
+const { resolveColor } = require('../util/Util.js');
 
 let cacheWarningEmitted = false;
 
@@ -97,7 +97,7 @@ class GuildManager extends CachedManager {
    */
 
   /**
-   * Resolves a GuildResolvable to a Guild object.
+   * Resolves a {@link GuildResolvable} to a {@link Guild} object.
    * @method resolve
    * @memberof GuildManager
    * @instance
@@ -273,7 +273,7 @@ class GuildManager extends CachedManager {
       const data = await this.client.rest.get(Routes.guild(id), {
         query: makeURLSearchParams({ with_counts: options.withCounts ?? true }),
       });
-      data.shardId = ShardClientUtil.shardIdForGuildId(id, this.client.options.shardCount);
+      data.shardId = ShardClientUtil.shardIdForGuildId(id, await this.client.ws.fetchShardCount());
       return this._add(data, options.cache);
     }
 
@@ -296,4 +296,4 @@ class GuildManager extends CachedManager {
   }
 }
 
-module.exports = GuildManager;
+exports.GuildManager = GuildManager;
