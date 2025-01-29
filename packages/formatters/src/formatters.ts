@@ -57,17 +57,6 @@ export function bold<Content extends string>(content: Content): `**${Content}**`
 }
 
 /**
- * Formats the content into underscored text.
- *
- * @typeParam Content - This is inferred by the supplied content
- * @param content - The content to wrap
- * @deprecated Use {@link underline} instead.
- */
-export function underscore<Content extends string>(content: Content): `__${Content}__` {
-	return underline(content);
-}
-
-/**
  * Formats the content into underlined text.
  *
  * @typeParam Content - This is inferred by the supplied content
@@ -226,85 +215,95 @@ export function roleMention<RoleId extends Snowflake>(roleId: RoleId): `<@&${Rol
 }
 
 /**
- * Formats an application command name, subcommand group name, subcommand name, and id into an application command mention.
+ * Formats a role id into a linked role mention.
  *
- * @typeParam CommandName - This is inferred by the supplied command name
- * @typeParam SubcommandGroupName - This is inferred by the supplied subcommand group name
- * @typeParam SubcommandName - This is inferred by the supplied subcommand name
- * @typeParam CommandId - This is inferred by the supplied command id
- * @param commandName - The application command name to format
- * @param subcommandGroupName - The subcommand group name to format
- * @param subcommandName - The subcommand name to format
- * @param commandId - The application command id to format
+ * @typeParam RoleId - This is inferred by the supplied role id
+ * @param roleId - The role id to format
  */
-export function chatInputApplicationCommandMention<
-	CommandName extends string,
-	SubcommandGroupName extends string,
-	SubcommandName extends string,
-	CommandId extends Snowflake,
->(
-	commandName: CommandName,
-	subcommandGroupName: SubcommandGroupName,
-	subcommandName: SubcommandName,
-	commandId: CommandId,
-): `</${CommandName} ${SubcommandGroupName} ${SubcommandName}:${CommandId}>`;
-
-/**
- * Formats an application command name, subcommand name, and id into an application command mention.
- *
- * @typeParam CommandName - This is inferred by the supplied command name
- * @typeParam SubcommandName - This is inferred by the supplied subcommand name
- * @typeParam CommandId - This is inferred by the supplied command id
- * @param commandName - The application command name to format
- * @param subcommandName - The subcommand name to format
- * @param commandId - The application command id to format
- */
-export function chatInputApplicationCommandMention<
-	CommandName extends string,
-	SubcommandName extends string,
-	CommandId extends Snowflake,
->(
-	commandName: CommandName,
-	subcommandName: SubcommandName,
-	commandId: CommandId,
-): `</${CommandName} ${SubcommandName}:${CommandId}>`;
+export function linkedRoleMention<RoleId extends Snowflake>(roleId: RoleId): `<id:linked-roles:${RoleId}>` {
+	return `<id:linked-roles:${roleId}>`;
+}
 
 /**
  * Formats an application command name and id into an application command mention.
  *
- * @typeParam CommandName - This is inferred by the supplied command name
  * @typeParam CommandId - This is inferred by the supplied command id
- * @param commandName - The application command name to format
+ * @typeParam CommandName - This is inferred by the supplied command name
  * @param commandId - The application command id to format
+ * @param commandName - The application command name to format
  */
-export function chatInputApplicationCommandMention<CommandName extends string, CommandId extends Snowflake>(
-	commandName: CommandName,
+export function chatInputApplicationCommandMention<CommandId extends Snowflake, CommandName extends string>(
 	commandId: CommandId,
+	commandName: CommandName,
 ): `</${CommandName}:${CommandId}>`;
 
+/**
+ * Formats an application command name, subcommand name, and id into an application command mention.
+ *
+ * @typeParam CommandId - This is inferred by the supplied command id
+ * @typeParam CommandName - This is inferred by the supplied command name
+ * @typeParam SubcommandName - This is inferred by the supplied subcommand name
+ * @param commandId - The application command id to format
+ * @param commandName - The application command name to format
+ * @param subcommandName - The subcommand name to format
+ */
 export function chatInputApplicationCommandMention<
-	CommandName extends string,
-	SubcommandGroupName extends Snowflake | string,
-	SubcommandName extends Snowflake | string,
 	CommandId extends Snowflake,
+	CommandName extends string,
+	SubcommandName extends string,
 >(
+	commandId: CommandId,
 	commandName: CommandName,
+	subcommandName: SubcommandName,
+): `</${CommandName} ${SubcommandName}:${CommandId}>`;
+
+/**
+ * Formats an application command name, subcommand group name, subcommand name, and id into an application command mention.
+ *
+ * @typeParam CommandId - This is inferred by the supplied command id
+ * @typeParam CommandName - This is inferred by the supplied command name
+ * @typeParam SubcommandName - This is inferred by the supplied subcommand name
+ * @typeParam SubcommandGroupName - This is inferred by the supplied subcommand group name
+ * @param commandId - The application command id to format
+ * @param commandName - The application command name to format
+ * @param subcommandName - The subcommand name to format
+ * @param subcommandGroupName - The subcommand group name to format
+ */
+export function chatInputApplicationCommandMention<
+	CommandId extends Snowflake,
+	CommandName extends string,
+	SubcommandName extends string,
+	SubcommandGroupName extends string,
+>(
+	commandId: CommandId,
+	commandName: CommandName,
+	subcommandName: SubcommandName,
 	subcommandGroupName: SubcommandGroupName,
-	subcommandName?: SubcommandName,
-	commandId?: CommandId,
+): `</${CommandName} ${SubcommandGroupName} ${SubcommandName}:${CommandId}>`;
+
+export function chatInputApplicationCommandMention<
+	CommandId extends Snowflake,
+	CommandName extends string,
+	SubcommandName extends string,
+	SubcommandGroupName extends string,
+>(
+	commandId: CommandId,
+	commandName: CommandName,
+	subcommandName?: SubcommandName | undefined,
+	subcommandGroupName?: SubcommandGroupName | undefined,
 ):
 	| `</${CommandName} ${SubcommandGroupName} ${SubcommandName}:${CommandId}>`
-	| `</${CommandName} ${SubcommandGroupName}:${SubcommandName}>`
-	| `</${CommandName}:${SubcommandGroupName}>` {
-	if (commandId !== undefined) {
-		return `</${commandName} ${subcommandGroupName} ${subcommandName!}:${commandId}>`;
+	| `</${CommandName} ${SubcommandName}:${CommandId}>`
+	| `</${CommandName}:${CommandId}>` {
+	if (subcommandGroupName !== undefined && subcommandName !== undefined) {
+		return `</${commandName} ${subcommandGroupName} ${subcommandName}:${commandId}>`;
 	}
 
 	if (subcommandName !== undefined) {
-		return `</${commandName} ${subcommandGroupName}:${subcommandName}>`;
+		return `</${commandName} ${subcommandName}:${commandId}>`;
 	}
 
-	return `</${commandName}:${subcommandGroupName}>`;
+	return `</${commandName}:${commandId}>`;
 }
 
 /**
@@ -313,7 +312,7 @@ export function chatInputApplicationCommandMention<
  * @typeParam EmojiId - This is inferred by the supplied emoji id
  * @param emojiId - The emoji id to format
  */
-export function formatEmoji<EmojiId extends Snowflake>(emojiId: EmojiId, animated?: false): `<:_:${EmojiId}>`;
+export function formatEmoji<EmojiId extends Snowflake>(emojiId: EmojiId, animated?: false): `<:emoji:${EmojiId}>`;
 
 /**
  * Formats an animated emoji id into a fully qualified emoji identifier.
@@ -322,7 +321,7 @@ export function formatEmoji<EmojiId extends Snowflake>(emojiId: EmojiId, animate
  * @param emojiId - The emoji id to format
  * @param animated - Whether the emoji is animated
  */
-export function formatEmoji<EmojiId extends Snowflake>(emojiId: EmojiId, animated?: true): `<a:_:${EmojiId}>`;
+export function formatEmoji<EmojiId extends Snowflake>(emojiId: EmojiId, animated?: true): `<a:emoji:${EmojiId}>`;
 
 /**
  * Formats an emoji id into a fully qualified emoji identifier.
@@ -334,7 +333,7 @@ export function formatEmoji<EmojiId extends Snowflake>(emojiId: EmojiId, animate
 export function formatEmoji<EmojiId extends Snowflake>(
 	emojiId: EmojiId,
 	animated?: boolean,
-): `<:_:${EmojiId}>` | `<a:_:${EmojiId}>`;
+): `<:emoji:${EmojiId}>` | `<a:emoji:${EmojiId}>`;
 
 /**
  * Formats a non-animated emoji id and name into a fully qualified emoji identifier.
@@ -383,7 +382,7 @@ export function formatEmoji<EmojiId extends Snowflake, EmojiName extends string>
 
 	const { id, animated: isAnimated, name: emojiName } = options;
 
-	return `<${isAnimated ? 'a' : ''}:${emojiName ?? '_'}:${id}>`;
+	return `<${isAnimated ? 'a' : ''}:${emojiName ?? 'emoji'}:${id}>`;
 }
 
 /**
@@ -570,6 +569,16 @@ export function unorderedList(list: RecursiveArray<string>): string {
 }
 
 /**
+ * Formats the content into a subtext.
+ *
+ * @typeParam Content - This is inferred by the supplied content
+ * @param content - The content to wrap
+ */
+export function subtext<Content extends string>(content: Content): `-# ${Content}` {
+	return `-# ${content}`;
+}
+
+/**
  * Formats a date into a short date-time string.
  *
  * @param date - The date to format. Defaults to the current time
@@ -613,6 +622,39 @@ export function time(timeOrSeconds?: Date | number, style?: TimestampStylesStrin
 	}
 
 	return typeof style === 'string' ? `<t:${timeOrSeconds}:${style}>` : `<t:${timeOrSeconds}>`;
+}
+
+/**
+ * Formats an application directory link.
+ *
+ * @typeParam ApplicationId - This is inferred by the supplied application id
+ * @param applicationId - The application id
+ */
+export function applicationDirectory<ApplicationId extends Snowflake>(
+	applicationId: ApplicationId,
+): `https://discord.com/application-directory/${ApplicationId}/store`;
+
+/**
+ * Formats an application directory SKU link.
+ *
+ * @typeParam ApplicationId - This is inferred by the supplied application id
+ * @typeParam SKUId - This is inferred by the supplied SKU id
+ * @param applicationId - The application id
+ * @param skuId - The SKU id
+ */
+export function applicationDirectory<ApplicationId extends Snowflake, SKUId extends Snowflake>(
+	applicationId: ApplicationId,
+	skuId: SKUId,
+): `https://discord.com/application-directory/${ApplicationId}/store/${SKUId}`;
+
+export function applicationDirectory<ApplicationId extends Snowflake, SKUId extends Snowflake>(
+	applicationId: ApplicationId,
+	skuId?: SKUId,
+):
+	| `https://discord.com/application-directory/${ApplicationId}/store/${SKUId}`
+	| `https://discord.com/application-directory/${ApplicationId}/store` {
+	const url = `https://discord.com/application-directory/${applicationId}/store` as const;
+	return skuId ? `${url}/${skuId}` : url;
 }
 
 /**
@@ -675,7 +717,6 @@ export const TimestampStyles = {
  */
 export type TimestampStylesString = (typeof TimestampStyles)[keyof typeof TimestampStyles];
 
-// prettier-ignore
 /**
  * All the available faces from Discord's native slash commands.
  */
@@ -683,8 +724,7 @@ export enum Faces {
 	/**
 	 * `¯\_(ツ)_/¯`
 	 */
-	// eslint-disable-next-line no-useless-escape
-	Shrug = '¯\_(ツ)_/¯',
+	Shrug = '¯\\_(ツ)_/¯',
 
 	/**
 	 * `(╯°□°)╯︵ ┻━┻`
@@ -713,4 +753,8 @@ export enum GuildNavigationMentions {
 	 * {@link https://support.discord.com/hc/articles/13497665141655 | Server Guide} tab.
 	 */
 	Guide = '<id:guide>',
+	/**
+	 * {@link https://support.discord.com/hc/articles/10388356626711 | Linked Roles} tab.
+	 */
+	LinkedRoles = '<id:linked-roles>',
 }

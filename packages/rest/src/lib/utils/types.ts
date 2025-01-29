@@ -86,11 +86,17 @@ export interface RESTOptions {
 	 */
 	makeRequest(url: string, init: RequestInit): Promise<ResponseLike>;
 	/**
+	 * The media proxy path
+	 *
+	 * @defaultValue `'https://media.discordapp.net'`
+	 */
+	mediaProxy: string;
+	/**
 	 * The extra offset to add to rate limits in milliseconds
 	 *
 	 * @defaultValue `50`
 	 */
-	offset: number;
+	offset: GetRateLimitOffsetFunction | number;
 	/**
 	 * Determines how rate limiting and pre-emptive throttling should be handled.
 	 * When an array of strings, each element is treated as a prefix for the request route
@@ -191,6 +197,11 @@ export interface RateLimitData {
  */
 export type RateLimitQueueFilter = (rateLimitData: RateLimitData) => Awaitable<boolean>;
 
+/**
+ * A function that determines the rate limit offset for a given request.
+ */
+export type GetRateLimitOffsetFunction = (route: string) => number;
+
 export interface APIRequest {
 	/**
 	 * The data that was used to form the body of this request
@@ -258,6 +269,19 @@ export interface RawFile {
 	name: string;
 }
 
+export interface AuthData {
+	/**
+	 * The authorization prefix to use for this request, useful if you use this with bearer tokens
+	 *
+	 * @defaultValue `REST.options.authPrefix`
+	 */
+	prefix?: 'Bearer' | 'Bot';
+	/**
+	 * The authorization token to use for this request
+	 */
+	token: string;
+}
+
 /**
  * Represents possible data to be given to an endpoint
  */
@@ -267,17 +291,11 @@ export interface RequestData {
 	 */
 	appendToFormData?: boolean;
 	/**
-	 * If this request needs the `Authorization` header
+	 * Alternate authorization data to use for this request only, or `false` to disable the Authorization header
 	 *
 	 * @defaultValue `true`
 	 */
-	auth?: boolean;
-	/**
-	 * The authorization prefix to use for this request, useful if you use this with bearer tokens
-	 *
-	 * @defaultValue `'Bot'`
-	 */
-	authPrefix?: 'Bearer' | 'Bot';
+	auth?: AuthData | boolean | undefined;
 	/**
 	 * The body to send to this request.
 	 * If providing as BodyInit, set `passThroughBody: true`
@@ -352,7 +370,9 @@ export interface InternalRequest extends RequestData {
 	method: RequestMethod;
 }
 
-export type HandlerRequestData = Pick<InternalRequest, 'auth' | 'body' | 'files' | 'signal'>;
+export interface HandlerRequestData extends Pick<InternalRequest, 'body' | 'files' | 'signal'> {
+	auth: boolean | string;
+}
 
 /**
  * Parsed route data for an endpoint

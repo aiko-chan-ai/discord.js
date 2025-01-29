@@ -2,18 +2,18 @@
 
 const { DiscordSnowflake } = require('@sapphire/snowflake');
 const { AuditLogOptionsType, AuditLogEvent } = require('discord-api-types/v10');
-const AutoModerationRule = require('./AutoModerationRule');
-const { GuildScheduledEvent } = require('./GuildScheduledEvent');
-const Integration = require('./Integration');
-const Invite = require('./Invite');
-const { StageInstance } = require('./StageInstance');
-const { Sticker } = require('./Sticker');
-const Webhook = require('./Webhook');
-const Partials = require('../util/Partials');
-const { flatten } = require('../util/Util');
+const { AutoModerationRule } = require('./AutoModerationRule.js');
+const { GuildOnboardingPrompt } = require('./GuildOnboardingPrompt.js');
+const { GuildScheduledEvent } = require('./GuildScheduledEvent.js');
+const { Integration } = require('./Integration.js');
+const { Invite } = require('./Invite.js');
+const { StageInstance } = require('./StageInstance.js');
+const { Sticker } = require('./Sticker.js');
+const { Webhook } = require('./Webhook.js');
+const { Partials } = require('../util/Partials.js');
+const { flatten } = require('../util/Util.js');
 
 const Targets = {
-  All: 'All',
   Guild: 'Guild',
   GuildScheduledEvent: 'GuildScheduledEvent',
   Channel: 'Channel',
@@ -29,9 +29,12 @@ const Targets = {
   Thread: 'Thread',
   ApplicationCommand: 'ApplicationCommand',
   AutoModeration: 'AutoModeration',
+  GuildOnboardingPrompt: 'GuildOnboardingPrompt',
+  SoundboardSound: 'SoundboardSound',
   Unknown: 'Unknown',
 };
 
+// TODO: Add soundboard sounds when https://github.com/discordjs/discord.js/pull/10590 is merged
 /**
  * The target of a guild audit log entry. It can be one of:
  * * A guild
@@ -40,8 +43,7 @@ const Targets = {
  * * A role
  * * An invite
  * * A webhook
- * * An emoji
- * * A message
+ * * A guild emoji
  * * An integration
  * * A stage instance
  * * A sticker
@@ -49,10 +51,11 @@ const Targets = {
  * * A thread
  * * An application command
  * * An auto moderation rule
+ * * A guild onboarding prompt
  * * An object with an id key if target was deleted or fake entity
  * * An object where the keys represent either the new value or the old value
- * @typedef {?(Object|Guild|BaseChannel|User|Role|Invite|Webhook|GuildEmoji|Message|Integration|StageInstance|Sticker|
- * GuildScheduledEvent|ApplicationCommand|AutoModerationRule)} AuditLogEntryTarget
+ * @typedef {?(Object|Guild|BaseChannel|User|Role|Invite|Webhook|GuildEmoji|Integration|StageInstance|Sticker|
+ * GuildScheduledEvent|ApplicationCommand|AutoModerationRule|GuildOnboardingPrompt)} AuditLogEntryTarget
  */
 
 /**
@@ -79,7 +82,11 @@ const Targets = {
  * * Sticker
  * * Thread
  * * GuildScheduledEvent
- * * ApplicationCommandPermission
+ * * ApplicationCommand
+ * * GuildOnboardingPrompt
+ * * SoundboardSound
+ * * AutoModeration
+ * * Unknown
  * @typedef {string} AuditLogTargetType
  */
 
@@ -147,7 +154,7 @@ class GuildAuditLogsEntry {
     this.executor = data.user_id
       ? guild.client.options.partials.includes(Partials.User)
         ? guild.client.users._add({ id: data.user_id })
-        : guild.client.users.cache.get(data.user_id) ?? null
+        : (guild.client.users.cache.get(data.user_id) ?? null)
       : null;
 
     /**
@@ -165,7 +172,11 @@ class GuildAuditLogsEntry {
      * @type {AuditLogChange[]}
      */
     this.changes =
-      data.changes?.map(change => ({ key: change.key, old: change.old_value, new: change.new_value })) ?? [];
+      data.changes?.map(change => ({
+        key: change.key,
+        ...('old_value' in change ? { old: change.old_value } : {}),
+        ...('new_value' in change ? { new: change.new_value } : {}),
+      })) ?? [];
 
     /**
      * The entry's id
@@ -188,7 +199,6 @@ class GuildAuditLogsEntry {
 
       case AuditLogEvent.MemberMove:
       case AuditLogEvent.MessageDelete:
-      case AuditLogEvent.MessageBulkDelete:
         this.extra = {
           channel: guild.channels.cache.get(data.options.channel_id) ?? { id: data.options.channel_id },
           count: Number(data.options.count),
@@ -203,6 +213,7 @@ class GuildAuditLogsEntry {
         };
         break;
 
+      case AuditLogEvent.MessageBulkDelete:
       case AuditLogEvent.MemberDisconnect:
         this.extra = {
           count: Number(data.options.count),
@@ -289,7 +300,7 @@ class GuildAuditLogsEntry {
     } else if (targetType === Targets.User && data.target_id) {
       this.target = guild.client.options.partials.includes(Partials.User)
         ? guild.client.users._add({ id: data.target_id })
-        : guild.client.users.cache.get(data.target_id) ?? null;
+        : (guild.client.users.cache.get(data.target_id) ?? null);
     } else if (targetType === Targets.Guild) {
       this.target = guild.client.guilds.cache.get(data.target_id);
     } else if (targetType === Targets.Webhook) {
@@ -312,8 +323,8 @@ class GuildAuditLogsEntry {
       // Discord sends a channel id for the MessageBulkDelete action type.
       this.target =
         data.action_type === AuditLogEvent.MessageBulkDelete
-          ? guild.channels.cache.get(data.target_id) ?? { id: data.target_id }
-          : guild.client.users.cache.get(data.target_id) ?? null;
+          ? (guild.channels.cache.get(data.target_id) ?? { id: data.target_id })
+          : (guild.client.users.cache.get(data.target_id) ?? null);
     } else if (targetType === Targets.Integration) {
       this.target =
         logs?.integrations.get(data.target_id) ??
@@ -349,8 +360,20 @@ class GuildAuditLogsEntry {
           changesReduce(this.changes, { id: data.target_id, guild_id: guild.id }),
           guild,
         );
+    } else if (targetType === Targets.GuildOnboardingPrompt) {
+      this.target =
+        data.action_type === AuditLogEvent.OnboardingPromptCreate
+          ? new GuildOnboardingPrompt(guild.client, changesReduce(this.changes, { id: data.target_id }), guild.id)
+          : changesReduce(this.changes, { id: data.target_id });
+    } else if (targetType === Targets.Role) {
+      this.target = guild.roles.cache.get(data.target_id) ?? { id: data.target_id };
+    } else if (targetType === Targets.Emoji) {
+      this.target = guild.emojis.cache.get(data.target_id) ?? { id: data.target_id };
+      // TODO: Uncomment after https://github.com/discordjs/discord.js/pull/10590 is merged
+      // } else if (targetType === Targets.SoundboardSound) {
+      //   this.target = guild.soundboardSounds.cache.get(data.target_id) ?? { id: data.target_id };
     } else if (data.target_id) {
-      this.target = guild[`${targetType.toLowerCase()}s`]?.cache.get(data.target_id) ?? { id: data.target_id };
+      this.target = { id: data.target_id };
     }
   }
 
@@ -374,7 +397,10 @@ class GuildAuditLogsEntry {
     if (target < 110) return Targets.GuildScheduledEvent;
     if (target < 120) return Targets.Thread;
     if (target < 130) return Targets.ApplicationCommand;
-    if (target >= 140 && target < 150) return Targets.AutoModeration;
+    if (target < 140) return Targets.SoundboardSound;
+    if (target < 143) return Targets.AutoModeration;
+    if (target < 146) return Targets.User;
+    if (target >= 163 && target <= 165) return Targets.GuildOnboardingPrompt;
     return Targets.Unknown;
   }
 
@@ -400,8 +426,9 @@ class GuildAuditLogsEntry {
         AuditLogEvent.StickerCreate,
         AuditLogEvent.GuildScheduledEventCreate,
         AuditLogEvent.ThreadCreate,
+        AuditLogEvent.SoundboardSoundCreate,
         AuditLogEvent.AutoModerationRuleCreate,
-        AuditLogEvent.AutoModerationBlockMessage,
+        AuditLogEvent.OnboardingPromptCreate,
       ].includes(action)
     ) {
       return 'Create';
@@ -427,7 +454,9 @@ class GuildAuditLogsEntry {
         AuditLogEvent.StickerDelete,
         AuditLogEvent.GuildScheduledEventDelete,
         AuditLogEvent.ThreadDelete,
+        AuditLogEvent.SoundboardSoundDelete,
         AuditLogEvent.AutoModerationRuleDelete,
+        AuditLogEvent.OnboardingPromptDelete,
       ].includes(action)
     ) {
       return 'Delete';
@@ -451,7 +480,12 @@ class GuildAuditLogsEntry {
         AuditLogEvent.GuildScheduledEventUpdate,
         AuditLogEvent.ThreadUpdate,
         AuditLogEvent.ApplicationCommandPermissionUpdate,
+        AuditLogEvent.SoundboardSoundUpdate,
         AuditLogEvent.AutoModerationRuleUpdate,
+        AuditLogEvent.AutoModerationBlockMessage,
+        AuditLogEvent.AutoModerationFlagToChannel,
+        AuditLogEvent.AutoModerationUserCommunicationDisabled,
+        AuditLogEvent.OnboardingPromptUpdate,
       ].includes(action)
     ) {
       return 'Update';
@@ -478,9 +512,18 @@ class GuildAuditLogsEntry {
     return new Date(this.createdTimestamp);
   }
 
+  /**
+   * Checks whether this GuildAuditLogsEntry is of the specified {@link AuditLogEvent} type.
+   * @param {AuditLogEvent} action The type to check for
+   * @returns {boolean}
+   */
+  isAction(action) {
+    return this.action === action;
+  }
+
   toJSON() {
     return flatten(this, { createdTimestamp: true });
   }
 }
 
-module.exports = GuildAuditLogsEntry;
+exports.GuildAuditLogsEntry = GuildAuditLogsEntry;
