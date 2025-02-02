@@ -2,13 +2,14 @@
 
 const process = require('node:process');
 const { calculateShardId } = require('@discordjs/util');
-const { DiscordjsError, DiscordjsTypeError, ErrorCodes } = require('../errors');
-const Events = require('../util/Events');
-const { makeError, makePlainError } = require('../util/Util');
+const { WebSocketShardEvents } = require('@discordjs/ws');
+const { DiscordjsError, DiscordjsTypeError, ErrorCodes } = require('../errors/index.js');
+const { Events } = require('../util/Events.js');
+const { makeError, makePlainError } = require('../util/Util.js');
 
 /**
  * Helper class for sharded clients spawned as a child process/worker, such as from a {@link ShardingManager}.
- * Utilises IPC to send and receive data to/from the master process and other shards.
+ * Utilizes IPC to send and receive data to/from the master process and other shards.
  */
 class ShardClientUtil {
   constructor(client, mode) {
@@ -33,54 +34,30 @@ class ShardClientUtil {
     switch (mode) {
       case 'process':
         process.on('message', this._handleMessage.bind(this));
-        client.on(Events.ShardReady, () => {
+        client.on(Events.ClientReady, () => {
           process.send({ _ready: true });
         });
-        client.on(Events.ShardDisconnect, () => {
+        client.ws.on(WebSocketShardEvents.Closed, () => {
           process.send({ _disconnect: true });
         });
-        client.on(Events.ShardReconnecting, () => {
-          process.send({ _reconnecting: true });
-        });
-        client.on(Events.ShardResume, () => {
+        client.ws.on(WebSocketShardEvents.Resumed, () => {
           process.send({ _resume: true });
         });
         break;
       case 'worker':
         this.parentPort = require('node:worker_threads').parentPort;
         this.parentPort.on('message', this._handleMessage.bind(this));
-        client.on(Events.ShardReady, () => {
+        client.on(Events.ClientReady, () => {
           this.parentPort.postMessage({ _ready: true });
         });
-        client.on(Events.ShardDisconnect, () => {
+        client.ws.on(WebSocketShardEvents.Closed, () => {
           this.parentPort.postMessage({ _disconnect: true });
         });
-        client.on(Events.ShardReconnecting, () => {
-          this.parentPort.postMessage({ _reconnecting: true });
-        });
-        client.on(Events.ShardResume, () => {
+        client.ws.on(WebSocketShardEvents.Resumed, () => {
           this.parentPort.postMessage({ _resume: true });
         });
         break;
     }
-  }
-
-  /**
-   * Array of shard ids of this client
-   * @type {number[]}
-   * @readonly
-   */
-  get ids() {
-    return this.client.options.shards;
-  }
-
-  /**
-   * Total number of shards
-   * @type {number}
-   * @readonly
-   */
-  get count() {
-    return this.client.options.shardCount;
   }
 
   /**
@@ -225,7 +202,8 @@ class ShardClientUtil {
        * Emitted when the client encounters an error.
        * <warn>Errors thrown within this event do not have a catch handler, it is
        * recommended to not use async functions as `error` event handlers. See the
-       * [Node.js docs](https://nodejs.org/api/events.html#capture-rejections-of-promises) for details.</warn>
+       * {@link https://nodejs.org/api/events.html#capture-rejections-of-promises Node.js documentation}
+       * for details.)</warn>
        * @event Client#error
        * @param {Error} error The error encountered
        */
@@ -265,7 +243,7 @@ class ShardClientUtil {
 
   /**
    * Increments max listeners by one for a given emitter, if they are not zero.
-   * @param {EventEmitter|process} emitter The emitter that emits the events.
+   * @param {Worker|ChildProcess} emitter The emitter that emits the events.
    * @private
    */
   incrementMaxListeners(emitter) {
@@ -277,7 +255,7 @@ class ShardClientUtil {
 
   /**
    * Decrements max listeners by one for a given emitter, if they are not zero.
-   * @param {EventEmitter|process} emitter The emitter that emits the events.
+   * @param {Worker|ChildProcess} emitter The emitter that emits the events.
    * @private
    */
   decrementMaxListeners(emitter) {
@@ -288,4 +266,4 @@ class ShardClientUtil {
   }
 }
 
-module.exports = ShardClientUtil;
+exports.ShardClientUtil = ShardClientUtil;

@@ -3,11 +3,11 @@
 const { Collection } = require('@discordjs/collection');
 const { DiscordSnowflake } = require('@sapphire/snowflake');
 const { InteractionType, Routes } = require('discord-api-types/v10');
-const { DiscordjsTypeError, DiscordjsError, ErrorCodes } = require('../../errors');
-const { MaxBulkDeletableMessageAge } = require('../../util/Constants');
-const InteractionCollector = require('../InteractionCollector');
-const MessageCollector = require('../MessageCollector');
-const MessagePayload = require('../MessagePayload');
+const { DiscordjsTypeError, DiscordjsError, ErrorCodes } = require('../../errors/index.js');
+const { MaxBulkDeletableMessageAge } = require('../../util/Constants.js');
+const { InteractionCollector } = require('../InteractionCollector.js');
+const { MessageCollector } = require('../MessageCollector.js');
+const { MessagePayload } = require('../MessagePayload.js');
 
 /**
  * Interface for classes that have text-channel-like features.
@@ -53,16 +53,39 @@ class TextBasedChannel {
   }
 
   /**
+   * Represents the data for a poll answer.
+   * @typedef {Object} PollAnswerData
+   * @property {string} text The text for the poll answer
+   * @property {EmojiIdentifierResolvable} [emoji] The emoji for the poll answer
+   */
+
+  /**
+   * Represents the data for a poll.
+   * @typedef {Object} PollData
+   * @property {PollQuestionMedia} question The question for the poll
+   * @property {PollAnswerData[]} answers The answers for the poll
+   * @property {number} duration The duration in hours for the poll
+   * @property {boolean} allowMultiselect Whether the poll allows multiple answers
+   * @property {PollLayoutType} [layoutType] The layout type for the poll
+   */
+
+  /**
    * The base message options for messages.
    * @typedef {Object} BaseMessageOptions
    * @property {?string} [content=''] The content for the message. This can only be `null` when editing a message.
    * @property {Array<(EmbedBuilder|Embed|APIEmbed)>} [embeds] The embeds for the message
    * @property {MessageMentionOptions} [allowedMentions] Which mentions should be parsed from the message content
-   * (see [here](https://discord.com/developers/docs/resources/channel#allowed-mentions-object) for more details)
+   * (see {@link https://discord.com/developers/docs/resources/message#allowed-mentions-object here} for more details)
    * @property {Array<(AttachmentBuilder|Attachment|AttachmentPayload|BufferResolvable)>} [files]
    * The files to send with the message.
    * @property {Array<(ActionRowBuilder|ActionRow|APIActionRowComponent)>} [components]
    * Action rows containing interactive components for the message (buttons, select menus)
+   */
+
+  /**
+   * The base message options for messages including a poll.
+   * @typedef {BaseMessageOptions} BaseMessageOptionsWithPoll
+   * @property {PollData} [poll] The poll to send with the message
    */
 
   /**
@@ -75,9 +98,13 @@ class TextBasedChannel {
 
   /**
    * The options for sending a message.
-   * @typedef {BaseMessageOptions} BaseMessageCreateOptions
+   * @typedef {BaseMessageOptionsWithPoll} BaseMessageCreateOptions
    * @property {boolean} [tts=false] Whether the message should be spoken aloud
-   * @property {string} [nonce=''] The nonce for the message
+   * @property {string} [nonce] The nonce for the message
+   * <info>This property is required if `enforceNonce` set to `true`.</info>
+   * @property {boolean} [enforceNonce] Whether the nonce should be checked for uniqueness in the past few minutes.
+   * If another message was created by the same author with the same nonce,
+   * that message will be returned and no new message will be created
    * @property {StickerResolvable[]} [stickers=[]] The stickers to send in the message
    * @property {MessageFlags} [flags] Which flags to set for the message.
    * <info>Only `MessageFlags.SuppressEmbeds` and `MessageFlags.SuppressNotifications` can be set.</info>
@@ -135,8 +162,8 @@ class TextBasedChannel {
    *   .catch(console.error);
    */
   async send(options) {
-    const User = require('../User');
-    const { GuildMember } = require('../GuildMember');
+    const { User } = require('../User.js');
+    const { GuildMember } = require('../GuildMember.js');
 
     if (this instanceof User || this instanceof GuildMember) {
       const dm = await this.createDM();
@@ -259,56 +286,44 @@ class TextBasedChannel {
   }
 
   /**
-   * Bulk deletes given messages that are newer than two weeks.
+   * Bulk deletes given messages up to 2 weeks old.
    * @param {Collection<Snowflake, Message>|MessageResolvable[]|number} messages
    * Messages or number of messages to delete
    * @param {boolean} [filterOld=false] Filter messages to remove those which are older than two weeks automatically
-   * @returns {Promise<Collection<Snowflake, Message|undefined>>} Returns the deleted messages
+   * @returns {Promise<Snowflake[]>} Returns the deleted messages ids
    * @example
    * // Bulk delete messages
    * channel.bulkDelete(5)
-   *   .then(messages => console.log(`Bulk deleted ${messages.size} messages`))
+   *   .then(messages => console.log(`Bulk deleted ${messages.length} messages`))
    *   .catch(console.error);
    */
   async bulkDelete(messages, filterOld = false) {
     if (Array.isArray(messages) || messages instanceof Collection) {
       let messageIds =
         messages instanceof Collection ? [...messages.keys()] : messages.map(message => message.id ?? message);
+
       if (filterOld) {
         messageIds = messageIds.filter(
           id => Date.now() - DiscordSnowflake.timestampFrom(id) < MaxBulkDeletableMessageAge,
         );
       }
-      if (messageIds.length === 0) return new Collection();
+
+      if (messageIds.length === 0) return [];
+
       if (messageIds.length === 1) {
-        const message = this.client.actions.MessageDelete.getMessage(
-          {
-            message_id: messageIds[0],
-          },
-          this,
-        );
         await this.client.rest.delete(Routes.channelMessage(this.id, messageIds[0]));
-        return message ? new Collection([[message.id, message]]) : new Collection();
+        return messageIds;
       }
+
       await this.client.rest.post(Routes.channelBulkDelete(this.id), { body: { messages: messageIds } });
-      return messageIds.reduce(
-        (col, id) =>
-          col.set(
-            id,
-            this.client.actions.MessageDeleteBulk.getMessage(
-              {
-                message_id: id,
-              },
-              this,
-            ),
-          ),
-        new Collection(),
-      );
+      return messageIds;
     }
-    if (!isNaN(messages)) {
+
+    if (!Number.isNaN(messages)) {
       const msgs = await this.messages.fetch({ limit: messages });
       return this.bulkDelete(msgs, filterOld);
     }
+
     throw new DiscordjsTypeError(ErrorCodes.MessageBulkDeleteType);
   }
 
@@ -400,8 +415,8 @@ class TextBasedChannel {
   }
 }
 
-module.exports = TextBasedChannel;
+exports.TextBasedChannel = TextBasedChannel;
 
 // Fixes Circular
 // eslint-disable-next-line import/order
-const GuildMessageManager = require('../../managers/GuildMessageManager');
+const { GuildMessageManager } = require('../../managers/GuildMessageManager.js');

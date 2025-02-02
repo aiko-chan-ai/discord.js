@@ -1,29 +1,29 @@
 'use strict';
 
-const EventEmitter = require('node:events');
 const fs = require('node:fs');
 const path = require('node:path');
 const process = require('node:process');
 const { setTimeout: sleep } = require('node:timers/promises');
 const { Collection } = require('@discordjs/collection');
-const Shard = require('./Shard');
-const { DiscordjsError, DiscordjsTypeError, DiscordjsRangeError, ErrorCodes } = require('../errors');
-const { fetchRecommendedShardCount } = require('../util/Util');
+const { AsyncEventEmitter } = require('@vladfrangu/async_event_emitter');
+const { Shard } = require('./Shard.js');
+const { DiscordjsError, DiscordjsTypeError, DiscordjsRangeError, ErrorCodes } = require('../errors/index.js');
+const { fetchRecommendedShardCount } = require('../util/Util.js');
 
 /**
  * This is a utility class that makes multi-process sharding of a bot an easy and painless experience.
  * It works by spawning a self-contained {@link ChildProcess} or {@link Worker} for each individual shard, each
  * containing its own instance of your bot's {@link Client}. They all have a line of communication with the master
- * process, and there are several useful methods that utilise it in order to simplify tasks that are normally difficult
+ * process, and there are several useful methods that utilize it in order to simplify tasks that are normally difficult
  * with sharding. It can spawn a specific number of shards or the amount that Discord suggests for the bot, and takes a
  * path to your main bot script to launch for each one.
- * @extends {EventEmitter}
+ * @extends {AsyncEventEmitter}
  */
-class ShardingManager extends EventEmitter {
+class ShardingManager extends AsyncEventEmitter {
   /**
    * The mode to spawn shards with for a {@link ShardingManager}. Can be either one of:
    * * 'process' to use child processes
-   * * 'worker' to use [Worker threads](https://nodejs.org/api/worker_threads.html)
+   * * 'worker' to use {@link Worker} threads
    * @typedef {string} ShardingManagerMode
    */
 
@@ -37,9 +37,7 @@ class ShardingManager extends EventEmitter {
    * @property {boolean} [silent=false] Whether to pass the silent flag to child process
    * (only available when mode is set to 'process')
    * @property {string[]} [shardArgs=[]] Arguments to pass to the shard script when spawning
-   * (only available when mode is set to 'process')
    * @property {string[]} [execArgv=[]] Arguments to pass to the shard script executable when spawning
-   * (only available when mode is set to 'process')
    * @property {string} [token] Token to use for automatic shard count and passing to shards
    */
 
@@ -258,9 +256,9 @@ class ShardingManager extends EventEmitter {
    * @param {BroadcastEvalOptions} [options={}] The options for the broadcast
    * @returns {Promise<*|Array<*>>} Results of the script execution
    */
-  broadcastEval(script, options = {}) {
+  async broadcastEval(script, options = {}) {
     if (typeof script !== 'function') {
-      return Promise.reject(new DiscordjsTypeError(ErrorCodes.ShardingInvalidEvalBroadcast));
+      throw new DiscordjsTypeError(ErrorCodes.ShardingInvalidEvalBroadcast);
     }
     return this._performOnShards('eval', [`(${script})(this, ${JSON.stringify(options.context)})`], options.shard);
   }
@@ -287,16 +285,16 @@ class ShardingManager extends EventEmitter {
    * @returns {Promise<*|Array<*>>} Results of the method execution
    * @private
    */
-  _performOnShards(method, args, shard) {
-    if (this.shards.size === 0) return Promise.reject(new DiscordjsError(ErrorCodes.ShardingNoShards));
+  async _performOnShards(method, args, shard) {
+    if (this.shards.size === 0) throw new DiscordjsError(ErrorCodes.ShardingNoShards);
 
     if (typeof shard === 'number') {
       if (this.shards.has(shard)) return this.shards.get(shard)[method](...args);
-      return Promise.reject(new DiscordjsError(ErrorCodes.ShardingShardNotFound, shard));
+      throw new DiscordjsError(ErrorCodes.ShardingShardNotFound, shard);
     }
 
     if (this.shards.size !== this.shardList.length) {
-      return Promise.reject(new DiscordjsError(ErrorCodes.ShardingInProcess));
+      throw new DiscordjsError(ErrorCodes.ShardingInProcess);
     }
 
     const promises = [];
@@ -330,4 +328,4 @@ class ShardingManager extends EventEmitter {
   }
 }
 
-module.exports = ShardingManager;
+exports.ShardingManager = ShardingManager;

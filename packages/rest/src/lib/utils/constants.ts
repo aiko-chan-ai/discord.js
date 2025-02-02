@@ -31,6 +31,7 @@ export const DefaultRestOptions = {
 	async makeRequest(...args): Promise<ResponseLike> {
 		return getDefaultStrategy()(...args);
 	},
+	mediaProxy: 'https://media.discordapp.net',
 } as const satisfies Required<RESTOptions>;
 
 /**
@@ -60,9 +61,4 @@ export const OverwrittenMimeTypes = {
 
 export const BurstHandlerMajorIdKey = 'burst';
 
-/**
- * Prefix for deprecation warnings.
- *
- * @internal
- */
-export const DEPRECATION_WARNING_PREFIX = 'DeprecationWarning' as const;
+export const AUTH_UUID_NAMESPACE = 'acc82a4c-f887-417b-a69c-f74096ff7e59';
