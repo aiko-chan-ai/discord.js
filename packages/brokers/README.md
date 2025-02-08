@@ -9,7 +9,8 @@
 		<a href="https://www.npmjs.com/package/@discordjs/brokers"><img src="https://img.shields.io/npm/v/@discordjs/brokers.svg?maxAge=3600" alt="npm version" /></a>
 		<a href="https://www.npmjs.com/package/@discordjs/brokers"><img src="https://img.shields.io/npm/dt/@discordjs/brokers.svg?maxAge=3600" alt="npm downloads" /></a>
 		<a href="https://github.com/discordjs/discord.js/actions"><img src="https://github.com/discordjs/discord.js/actions/workflows/test.yml/badge.svg" alt="Build status" /></a>
-		<a href="https://codecov.io/gh/discordjs/discord.js" ><img src="https://codecov.io/gh/discordjs/discord.js/branch/main/graph/badge.svg?precision=2&flag=brokers" alt="Code coverage" /></a>
+		<a href="https://github.com/discordjs/discord.js/commits/main/packages/brokers"><img alt="Last commit." src="https://img.shields.io/github/last-commit/discordjs/discord.js?logo=github&logoColor=ffffff&path=packages%2Fbrokers"></a>
+		<a href="https://codecov.io/gh/discordjs/discord.js"><img src="https://codecov.io/gh/discordjs/discord.js/branch/main/graph/badge.svg?precision=2&flag=brokers" alt="Code coverage" /></a>
 	</p>
 	<p>
 		<a href="https://vercel.com/?utm_source=discordjs&utm_campaign=oss"><img src="https://raw.githubusercontent.com/discordjs/discord.js/main/.github/powered-by-vercel.svg" alt="Vercel" /></a>
@@ -23,7 +24,7 @@
 
 ## Installation
 
-**Node.js 18 or newer is required.**
+**Node.js 22.12.0 or newer is required.**
 
 ```sh
 npm install @discordjs/brokers
@@ -40,7 +41,7 @@ pnpm add @discordjs/brokers
 import { PubSubRedisBroker } from '@discordjs/brokers';
 import Redis from 'ioredis';
 
-const broker = new PubSubRedisBroker({ redisClient: new Redis() });
+const broker = new PubSubRedisBroker(new Redis());
 
 await broker.publish('test', 'Hello World!');
 await broker.destroy();
@@ -49,7 +50,7 @@ await broker.destroy();
 import { PubSubRedisBroker } from '@discordjs/brokers';
 import Redis from 'ioredis';
 
-const broker = new PubSubRedisBroker({ redisClient: new Redis() });
+const broker = new PubSubRedisBroker(new Redis());
 broker.on('test', ({ data, ack }) => {
 	console.log(data);
 	void ack();
@@ -65,7 +66,7 @@ await broker.subscribe('subscribers', ['test']);
 import { RPCRedisBroker } from '@discordjs/brokers';
 import Redis from 'ioredis';
 
-const broker = new RPCRedisBroker({ redisClient: new Redis() });
+const broker = new RPCRedisBroker(new Redis());
 
 console.log(await broker.call('testcall', 'Hello World!'));
 await broker.destroy();
@@ -74,7 +75,7 @@ await broker.destroy();
 import { RPCRedisBroker } from '@discordjs/brokers';
 import Redis from 'ioredis';
 
-const broker = new RPCRedisBroker({ redisClient: new Redis() });
+const broker = new RPCRedisBroker(new Redis());
 broker.on('testcall', ({ data, ack, reply }) => {
 	console.log('responder', data);
 	void ack();

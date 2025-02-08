@@ -1,6 +1,6 @@
 'use strict';
 
-const { Emoji } = require('./Emoji');
+const { Emoji } = require('./Emoji.js');
 
 /**
  * Parent class for {@link GuildEmoji} and {@link GuildPreviewEmoji}.
@@ -58,18 +58,8 @@ class BaseGuildEmoji extends Emoji {
  * @method imageURL
  * @memberof BaseGuildEmoji
  * @instance
- * @param {BaseImageURLOptions} [options] Options for the image URL
+ * @param {ImageURLOptions} [options={}] Options for the image URL
  * @returns {string}
  */
 
-/**
- * Returns a URL for the emoji.
- * @name url
- * @memberof BaseGuildEmoji
- * @instance
- * @type {string}
- * @readonly
- * @deprecated Use {@link BaseGuildEmoji#imageURL} instead.
- */
-
-module.exports = BaseGuildEmoji;
+exports.BaseGuildEmoji = BaseGuildEmoji;

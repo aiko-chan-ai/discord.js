@@ -1,12 +1,12 @@
 'use strict';
 
-const Action = require('./Action');
-const Events = require('../../util/Events');
+const { Action } = require('./Action.js');
+const { Events } = require('../../util/Events.js');
 
 class StageInstanceDeleteAction extends Action {
   handle(data) {
     const client = this.client;
-    const channel = this.getChannel(data);
+    const channel = this.getChannel({ id: data.channel_id, guild_id: data.guild_id });
 
     if (channel) {
       const stageInstance = channel.guild.stageInstances._add(data);
@@ -28,4 +28,4 @@ class StageInstanceDeleteAction extends Action {
   }
 }
 
-module.exports = StageInstanceDeleteAction;
+exports.StageInstanceDeleteAction = StageInstanceDeleteAction;

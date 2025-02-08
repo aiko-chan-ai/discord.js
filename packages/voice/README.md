@@ -9,7 +9,8 @@
 		<a href="https://www.npmjs.com/package/@discordjs/voice"><img src="https://img.shields.io/npm/v/@discordjs/voice.svg?maxAge=3600" alt="npm version" /></a>
 		<a href="https://www.npmjs.com/package/@discordjs/voice"><img src="https://img.shields.io/npm/dt/@discordjs/voice.svg?maxAge=3600" alt="npm downloads" /></a>
 		<a href="https://github.com/discordjs/discord.js/actions"><img src="https://github.com/discordjs/discord.js/actions/workflows/test.yml/badge.svg" alt="Build status" /></a>
-		<a href="https://codecov.io/gh/discordjs/discord.js" ><img src="https://codecov.io/gh/discordjs/discord.js/branch/main/graph/badge.svg?precision=2&flag=voice" alt="Code coverage" /></a>
+		<a href="https://github.com/discordjs/discord.js/commits/main/packages/voice"><img alt="Last commit." src="https://img.shields.io/github/last-commit/discordjs/discord.js?logo=github&logoColor=ffffff&path=packages%2Fvoice"></a>
+		<a href="https://codecov.io/gh/discordjs/discord.js"><img src="https://codecov.io/gh/discordjs/discord.js/branch/main/graph/badge.svg?precision=2&flag=voice" alt="Code coverage" /></a>
 	</p>
 	<p>
 		<a href="https://vercel.com/?utm_source=discordjs&utm_campaign=oss"><img src="https://raw.githubusercontent.com/discordjs/discord.js/main/.github/powered-by-vercel.svg" alt="Vercel" /></a>
@@ -24,7 +25,7 @@
 **Features:**
 
 - Send and receive\* audio in Discord voice-based channels
-- A strong focus on reliability and predictable behaviour
+- A strong focus on reliability and predictable behavior
 - Horizontal scalability and libraries other than [discord.js](https://discord.js.org/) are supported with custom adapters
 - A robust audio processing system that can handle a wide range of audio sources
 
@@ -32,7 +33,7 @@
 
 ## Installation
 
-**Node.js 16.11.0 or newer is required.**
+**Node.js 22.12.0 or newer is required.**
 
 ```sh
 npm install @discordjs/voice
@@ -51,9 +52,13 @@ try installing another.
 
 **Encryption Libraries (npm install):**
 
+> [!NOTE]
+> You only need to install one of these libraries if your system does not support `aes-256-gcm` (verify by running `require('node:crypto').getCiphers().includes('aes-256-gcm')`).
+
 - `sodium-native`: ^3.3.0
 - `sodium`: ^3.0.2
-- `tweetnacl`: ^1.0.3
+- `@stablelib/xchacha20poly1305`: ^2.0.0
+- `@noble/ciphers`: ^1.0.0
 - `libsodium-wrappers`: ^0.7.9
 
 **Opus Libraries (npm install):**

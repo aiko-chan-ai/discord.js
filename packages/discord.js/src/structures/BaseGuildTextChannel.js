@@ -1,9 +1,9 @@
 'use strict';
 
-const GuildChannel = require('./GuildChannel');
-const TextBasedChannel = require('./interfaces/TextBasedChannel');
-const GuildMessageManager = require('../managers/GuildMessageManager');
-const GuildTextThreadManager = require('../managers/GuildTextThreadManager');
+const { GuildChannel } = require('./GuildChannel.js');
+const { TextBasedChannel } = require('./interfaces/TextBasedChannel.js');
+const { GuildMessageManager } = require('../managers/GuildMessageManager.js');
+const { GuildTextThreadManager } = require('../managers/GuildTextThreadManager.js');
 
 /**
  * Represents a text-based guild channel on Discord.
@@ -101,7 +101,7 @@ class BaseGuildTextChannel extends GuildChannel {
 
   /**
    * Sets the type of this channel.
-   * <info>Only conversion between {@link TextChannel} and {@link NewsChannel} is supported.</info>
+   * <info>Only conversion between {@link TextChannel} and {@link AnnouncementChannel} is supported.</info>
    * @param {ChannelType.GuildText|ChannelType.GuildAnnouncement} type The new channel type
    * @param {string} [reason] Reason for changing the channel's type
    * @returns {Promise<GuildChannel>}
@@ -193,4 +193,4 @@ class BaseGuildTextChannel extends GuildChannel {
 
 TextBasedChannel.applyToClass(BaseGuildTextChannel, true);
 
-module.exports = BaseGuildTextChannel;
+exports.BaseGuildTextChannel = BaseGuildTextChannel;

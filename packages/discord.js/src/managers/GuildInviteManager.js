@@ -2,10 +2,10 @@
 
 const { Collection } = require('@discordjs/collection');
 const { Routes } = require('discord-api-types/v10');
-const CachedManager = require('./CachedManager');
-const { DiscordjsError, ErrorCodes } = require('../errors');
-const Invite = require('../structures/Invite');
-const { resolveInviteCode } = require('../util/DataResolver');
+const { CachedManager } = require('./CachedManager.js');
+const { DiscordjsError, ErrorCodes } = require('../errors/index.js');
+const { Invite } = require('../structures/Invite.js');
+const { resolveInviteCode } = require('../util/DataResolver.js');
 
 /**
  * Manages API methods for GuildInvites and stores their cache.
@@ -43,12 +43,12 @@ class GuildInviteManager extends CachedManager {
    * Data that can be resolved to a channel that an invite can be created on. This can be:
    * * TextChannel
    * * VoiceChannel
-   * * NewsChannel
+   * * AnnouncementChannel
    * * StageChannel
    * * ForumChannel
    * * MediaChannel
    * * Snowflake
-   * @typedef {TextChannel|VoiceChannel|NewsChannel|StageChannel|ForumChannel|MediaChannel|Snowflake}
+   * @typedef {TextChannel|VoiceChannel|AnnouncementChannel|StageChannel|ForumChannel|MediaChannel|Snowflake}
    * GuildInvitableChannelResolvable
    */
 
@@ -121,22 +121,22 @@ class GuildInviteManager extends CachedManager {
    *   .then(console.log)
    *   .catch(console.error);
    */
-  fetch(options) {
+  async fetch(options) {
     if (!options) return this._fetchMany();
     if (typeof options === 'string') {
       const code = resolveInviteCode(options);
-      if (!code) return Promise.reject(new DiscordjsError(ErrorCodes.InviteResolveCode));
+      if (!code) throw new DiscordjsError(ErrorCodes.InviteResolveCode);
       return this._fetchSingle({ code, cache: true });
     }
     if (!options.code) {
       if (options.channelId) {
         const id = this.guild.channels.resolveId(options.channelId);
-        if (!id) return Promise.reject(new DiscordjsError(ErrorCodes.GuildChannelResolve));
+        if (!id) throw new DiscordjsError(ErrorCodes.GuildChannelResolve);
         return this._fetchChannelMany(id, options.cache);
       }
 
       if ('cache' in options) return this._fetchMany(options.cache);
-      return Promise.reject(new DiscordjsError(ErrorCodes.InviteResolveCode));
+      throw new DiscordjsError(ErrorCodes.InviteResolveCode);
     }
     return this._fetchSingle({
       ...options,
@@ -212,4 +212,4 @@ class GuildInviteManager extends CachedManager {
   }
 }
 
-module.exports = GuildInviteManager;
+exports.GuildInviteManager = GuildInviteManager;

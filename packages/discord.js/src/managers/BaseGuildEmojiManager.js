@@ -1,9 +1,10 @@
 'use strict';
 
-const CachedManager = require('./CachedManager');
-const GuildEmoji = require('../structures/GuildEmoji');
-const ReactionEmoji = require('../structures/ReactionEmoji');
-const { parseEmoji } = require('../util/Util');
+const { CachedManager } = require('./CachedManager.js');
+const { ApplicationEmoji } = require('../structures/ApplicationEmoji.js');
+const { GuildEmoji } = require('../structures/GuildEmoji.js');
+const { ReactionEmoji } = require('../structures/ReactionEmoji.js');
+const { parseEmoji } = require('../util/Util.js');
 
 /**
  * Holds methods to resolve GuildEmojis and stores their cache.
@@ -25,7 +26,8 @@ class BaseGuildEmojiManager extends CachedManager {
    * * A Snowflake
    * * A GuildEmoji object
    * * A ReactionEmoji object
-   * @typedef {Snowflake|GuildEmoji|ReactionEmoji} EmojiResolvable
+   * * An ApplicationEmoji object
+   * @typedef {Snowflake|GuildEmoji|ReactionEmoji|ApplicationEmoji} EmojiResolvable
    */
 
   /**
@@ -34,7 +36,8 @@ class BaseGuildEmojiManager extends CachedManager {
    * @returns {?GuildEmoji}
    */
   resolve(emoji) {
-    if (emoji instanceof ReactionEmoji) return super.resolve(emoji.id);
+    if (emoji instanceof ReactionEmoji) return super.cache.get(emoji.id) ?? null;
+    if (emoji instanceof ApplicationEmoji) return super.cache.get(emoji.id) ?? null;
     return super.resolve(emoji);
   }
 
@@ -45,6 +48,7 @@ class BaseGuildEmojiManager extends CachedManager {
    */
   resolveId(emoji) {
     if (emoji instanceof ReactionEmoji) return emoji.id;
+    if (emoji instanceof ApplicationEmoji) return emoji.id;
     return super.resolveId(emoji);
   }
 
@@ -65,6 +69,7 @@ class BaseGuildEmojiManager extends CachedManager {
     const emojiResolvable = this.resolve(emoji);
     if (emojiResolvable) return emojiResolvable.identifier;
     if (emoji instanceof ReactionEmoji) return emoji.identifier;
+    if (emoji instanceof ApplicationEmoji) return emoji.identifier;
     if (typeof emoji === 'string') {
       const res = parseEmoji(emoji);
       if (res?.name.length) {
@@ -77,4 +82,4 @@ class BaseGuildEmojiManager extends CachedManager {
   }
 }
 
-module.exports = BaseGuildEmojiManager;
+exports.BaseGuildEmojiManager = BaseGuildEmojiManager;

@@ -4,11 +4,11 @@ const { makeURLSearchParams } = require('@discordjs/rest');
 const { lazy } = require('@discordjs/util');
 const { DiscordSnowflake } = require('@sapphire/snowflake');
 const { Routes, WebhookType } = require('discord-api-types/v10');
-const MessagePayload = require('./MessagePayload');
-const { DiscordjsError, ErrorCodes } = require('../errors');
-const { resolveImage } = require('../util/DataResolver');
+const { MessagePayload } = require('./MessagePayload.js');
+const { DiscordjsError, ErrorCodes } = require('../errors/index.js');
+const { resolveImage } = require('../util/DataResolver.js');
 
-const getMessage = lazy(() => require('./Message').Message);
+const getMessage = lazy(() => require('./Message.js').Message);
 
 /**
  * Represents a webhook.
@@ -108,7 +108,7 @@ class Webhook {
        * The source guild of the webhook
        * @type {?(Guild|APIGuild)}
        */
-      this.sourceGuild = this.client.guilds?.resolve(data.source_guild.id) ?? data.source_guild;
+      this.sourceGuild = this.client.guilds?.cache.get(data.source_guild.id) ?? data.source_guild;
     } else {
       this.sourceGuild ??= null;
     }
@@ -116,9 +116,9 @@ class Webhook {
     if ('source_channel' in data) {
       /**
        * The source channel of the webhook
-       * @type {?(NewsChannel|APIChannel)}
+       * @type {?(AnnouncementChannel|APIChannel)}
        */
-      this.sourceChannel = this.client.channels?.resolve(data.source_channel?.id) ?? data.source_channel;
+      this.sourceChannel = this.client.channels?.cache.get(data.source_channel?.id) ?? data.source_channel;
     } else {
       this.sourceChannel ??= null;
     }
@@ -126,7 +126,7 @@ class Webhook {
 
   /**
    * Options that can be passed into send.
-   * @typedef {BaseMessageOptions} WebhookMessageCreateOptions
+   * @typedef {BaseMessageOptionsWithPoll} WebhookMessageCreateOptions
    * @property {boolean} [tts=false] Whether the message should be spoken aloud
    * @property {MessageFlags} [flags] Which flags to set for the message.
    * <info>Only the {@link MessageFlags.SuppressEmbeds} flag can be set.</info>
@@ -141,15 +141,14 @@ class Webhook {
 
   /**
    * Options that can be passed into editMessage.
-   * @typedef {BaseMessageOptions} WebhookMessageEditOptions
-   * @property {Attachment[]} [attachments] Attachments to send with the message
+   * @typedef {MessageEditOptions} WebhookMessageEditOptions
    * @property {Snowflake} [threadId] The id of the thread this message belongs to
    * <info>For interaction webhooks, this property is ignored</info>
    */
 
   /**
    * The channel the webhook belongs to
-   * @type {?(TextChannel|VoiceChannel|StageChannel|NewsChannel|ForumChannel|MediaChannel)}
+   * @type {?(TextChannel|VoiceChannel|StageChannel|AnnouncementChannel|ForumChannel|MediaChannel)}
    * @readonly
    */
   get channel() {
@@ -478,4 +477,4 @@ class Webhook {
   }
 }
 
-module.exports = Webhook;
+exports.Webhook = Webhook;

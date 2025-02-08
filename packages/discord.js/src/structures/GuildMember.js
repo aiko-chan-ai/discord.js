@@ -1,13 +1,13 @@
 'use strict';
 
 const { PermissionFlagsBits } = require('discord-api-types/v10');
-const Base = require('./Base');
-const VoiceState = require('./VoiceState');
-const TextBasedChannel = require('./interfaces/TextBasedChannel');
-const { DiscordjsError, ErrorCodes } = require('../errors');
-const GuildMemberRoleManager = require('../managers/GuildMemberRoleManager');
-const { GuildMemberFlagsBitField } = require('../util/GuildMemberFlagsBitField');
-const PermissionsBitField = require('../util/PermissionsBitField');
+const { Base } = require('./Base.js');
+const { VoiceState } = require('./VoiceState.js');
+const { TextBasedChannel } = require('./interfaces/TextBasedChannel.js');
+const { DiscordjsError, ErrorCodes } = require('../errors/index.js');
+const { GuildMemberRoleManager } = require('../managers/GuildMemberRoleManager.js');
+const { GuildMemberFlagsBitField } = require('../util/GuildMemberFlagsBitField.js');
+const { PermissionsBitField } = require('../util/PermissionsBitField.js');
 
 /**
  * Represents a member of a guild on Discord.
@@ -84,6 +84,17 @@ class GuildMember extends Base {
     } else if (typeof this.avatar !== 'string') {
       this.avatar = null;
     }
+
+    if ('banner' in data) {
+      /**
+       * The guild member's banner hash.
+       * @type {?string}
+       */
+      this.banner = data.banner;
+    } else {
+      this.banner ??= null;
+    }
+
     if ('joined_at' in data) this.joinedTimestamp = Date.parse(data.joined_at);
     if ('premium_since' in data) {
       this.premiumSinceTimestamp = data.premium_since ? Date.parse(data.premium_since) : null;
@@ -156,13 +167,32 @@ class GuildMember extends Base {
   }
 
   /**
+   * A link to the member's banner.
+   * @param {ImageURLOptions} [options={}] Options for the banner URL
+   * @returns {?string}
+   */
+  bannerURL(options = {}) {
+    return this.banner && this.client.rest.cdn.guildMemberBanner(this.guild.id, this.id, this.banner, options);
+  }
+
+  /**
    * A link to the member's guild avatar if they have one.
    * Otherwise, a link to their {@link User#displayAvatarURL} will be returned.
-   * @param {ImageURLOptions} [options={}] Options for the Image URL
+   * @param {ImageURLOptions} [options={}] Options for the image URL
    * @returns {string}
    */
   displayAvatarURL(options) {
     return this.avatarURL(options) ?? this.user.displayAvatarURL(options);
+  }
+
+  /**
+   * A link to the member's guild banner if they have one.
+   * Otherwise, a link to their {@link User#bannerURL} will be returned.
+   * @param {ImageURLOptions} [options={}] Options for the image URL
+   * @returns {?string}
+   */
+  displayBannerURL(options) {
+    return this.bannerURL(options) ?? this.user.bannerURL(options);
   }
 
   /**
@@ -198,7 +228,7 @@ class GuildMember extends Base {
    * @readonly
    */
   get presence() {
-    return this.guild.presences.resolve(this.id);
+    return this.guild.presences.cache.get(this.id) ?? null;
   }
 
   /**
@@ -382,24 +412,22 @@ class GuildMember extends Base {
   /**
    * Kicks this member from the guild.
    * @param {string} [reason] Reason for kicking user
-   * @returns {Promise<GuildMember>}
+   * @returns {Promise<void>}
    */
-  kick(reason) {
-    return this.guild.members.kick(this, reason);
+  async kick(reason) {
+    await this.guild.members.kick(this, reason);
   }
 
   /**
    * Bans this guild member.
    * @param {BanOptions} [options] Options for the ban
-   * @returns {Promise<GuildMember>}
+   * @returns {Promise<void>}
    * @example
    * // Ban a guild member, deleting a week's worth of messages
-   * guildMember.ban({ deleteMessageSeconds: 60 * 60 * 24 * 7, reason: 'They deserved it' })
-   *   .then(console.log)
-   *   .catch(console.error);
+   * await guildMember.ban({ deleteMessageSeconds: 60 * 60 * 24 * 7, reason: 'They deserved it' });
    */
-  ban(options) {
-    return this.guild.bans.create(this, options);
+  async ban(options) {
+    await this.guild.bans.create(this, options);
   }
 
   /**
@@ -464,6 +492,7 @@ class GuildMember extends Base {
       this.joinedTimestamp === member.joinedTimestamp &&
       this.nickname === member.nickname &&
       this.avatar === member.avatar &&
+      this.banner === member.banner &&
       this.pending === member.pending &&
       this.communicationDisabledUntilTimestamp === member.communicationDisabledUntilTimestamp &&
       this.flags.bitfield === member.flags.bitfield &&
@@ -491,7 +520,9 @@ class GuildMember extends Base {
       roles: true,
     });
     json.avatarURL = this.avatarURL();
+    json.bannerURL = this.bannerURL();
     json.displayAvatarURL = this.displayAvatarURL();
+    json.displayBannerURL = this.displayBannerURL();
     return json;
   }
 }
